@@ -3,162 +3,129 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import dynamic from 'next/dynamic';
 
-// FIX LỖI Ở ĐÂY:
-// 1. Đổi import sang 'react-player' (gói chính) để TypeScript nhận diện đúng.
-// 2. Dùng 'as any' để tắt kiểm tra type khắt khe khi dùng dynamic import.
 const ReactPlayer = dynamic(() => import('react-player'), { ssr: false }) as any;
 
-interface Document {
-  id: string;
-  title: string;
-  video_url: string;
-  created_at: string;
-}
+interface Document { id: string; title: string; video_url: string; created_at: string; }
 
 export default function DocumentManager({ userRole }: { userRole: string }) {
   const [docs, setDocs] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  
-  // Form thêm mới
   const [title, setTitle] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
+  
+  // State tìm kiếm
+  const [searchTerm, setSearchTerm] = useState('');
 
   const isAdmin = userRole === 'admin' || userRole === 'master_head';
 
-  useEffect(() => {
-    setIsClient(true);
-    fetchDocs();
-  }, []);
+  useEffect(() => { setIsClient(true); fetchDocs(); }, []);
 
   const fetchDocs = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('documents')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
+    const { data } = await supabase.from('documents').select('*').order('created_at', { ascending: false });
     if (data) setDocs(data);
     setLoading(false);
   };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Chấp nhận link youtube.com và youtu.be
-    if (!videoUrl.includes('youtube.com') && !videoUrl.includes('youtu.be')) {
-      alert('Vui lòng chỉ nhập link Youtube!');
-      return;
-    }
-
-    const { error } = await supabase.from('documents').insert([{
-      title,
-      video_url: videoUrl
-    }]);
-
-    if (error) {
-      alert('Lỗi: ' + error.message);
-    } else {
-      alert('Đã đăng video thành công!');
-      setShowModal(false);
-      setTitle('');
-      setVideoUrl('');
-      fetchDocs();
-    }
+    const { error } = await supabase.from('documents').insert([{ title, video_url: videoUrl }]);
+    if (error) alert('Lỗi: ' + error.message);
+    else { alert('Đã đăng video!'); setShowModal(false); setTitle(''); setVideoUrl(''); fetchDocs(); }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bạn có chắc muốn xóa video này không?')) return;
-    const { error } = await supabase.from('documents').delete().eq('id', id);
-    if (!error) fetchDocs();
-    else alert('Không thể xóa: ' + error.message);
+    if (!confirm('Xóa video này?')) return;
+    await supabase.from('documents').delete().eq('id', id);
+    fetchDocs();
   };
+
+  // Logic lọc
+  const filteredDocs = docs.filter(doc => 
+    doc.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (!isClient) return null;
 
   return (
-    <div className="p-4">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-red-900 uppercase">Kho Tài Liệu Video</h2>
-        {isAdmin && (
-          <button 
-            onClick={() => setShowModal(true)}
-            className="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded shadow font-bold flex gap-2"
-          >
-            + Đăng Video Mới
-          </button>
-        )}
+    <div className="p-6 h-full bg-[#fdfbf7] overflow-y-auto custom-scrollbar">
+      {/* HEADER + SEARCH */}
+      <div className="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-red-900/10 pb-4 gap-4">
+        <h2 className="text-3xl font-serif font-bold text-red-900 uppercase tracking-wide">
+            Kho Tàng Tư Liệu
+        </h2>
+        
+        <div className="flex items-center gap-3 w-full md:w-auto">
+            {/* Thanh tìm kiếm */}
+            <div className="relative group w-full md:w-64">
+                <input 
+                    type="text" 
+                    placeholder="Tìm tên bài quyền..." 
+                    className="w-full pl-10 pr-4 py-2 rounded-full border border-stone-200 bg-white focus:border-red-800 focus:ring-1 focus:ring-red-800 outline-none text-sm transition-all shadow-sm group-hover:border-red-300"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 absolute left-3 top-2.5 text-stone-400 group-hover:text-red-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </div>
+
+            {isAdmin && (
+            <button onClick={() => setShowModal(true)} className="bg-red-900 text-yellow-50 px-5 py-2 rounded-xl shadow-md font-bold hover:bg-red-800 flex items-center gap-2 transition-transform active:scale-95 text-sm whitespace-nowrap">
+                <span>+</span> Đăng Video
+            </button>
+            )}
+        </div>
       </div>
 
-      {/* Grid Video */}
-      {loading ? <p>Đang tải tài liệu...</p> : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {docs.length === 0 && <p className="text-gray-500 col-span-3 text-center">Chưa có video nào.</p>}
-          
-          {docs.map((doc) => (
-            <div key={doc.id} className="bg-white rounded-lg shadow-md overflow-hidden border hover:shadow-lg transition-shadow">
-              {/* Video Player Container */}
-              <div className="aspect-video relative bg-black">
-                <ReactPlayer 
-                  url={doc.video_url} 
-                  width="100%" 
-                  height="100%" 
-                  controls={true}
-                  // config để ẩn các gợi ý video liên quan khi pause
-                  config={{
-                    youtube: {
-                      playerVars: { showinfo: 1 }
-                    }
-                  }}
-                />
-              </div>
-
-              {/* Thông tin */}
-              <div className="p-4">
-                <h3 className="font-bold text-lg text-gray-800 line-clamp-2 min-h-14">
-                  {doc.title}
-                </h3>
-                
-                {isAdmin && (
-                  <div className="mt-3 flex justify-end border-t pt-2">
-                    <button 
-                      onClick={() => handleDelete(doc.id)}
-                      className="text-red-600 text-sm hover:underline flex items-center gap-1"
-                    >
-                      🗑 Xóa video
-                    </button>
-                  </div>
-                )}
+      {/* GRID VIDEO */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {filteredDocs.map((doc) => (
+          <div key={doc.id} className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-stone-100 overflow-hidden flex flex-col group">
+            <div className="relative pt-[56.25%] bg-black">
+              <div className="absolute top-0 left-0 w-full h-full">
+                <ReactPlayer url={doc.video_url} width="100%" height="100%" controls light />
               </div>
             </div>
-          ))}
-        </div>
-      )}
+            <div className="p-5 flex-1 flex flex-col justify-between">
+              <h3 className="font-serif font-bold text-lg text-stone-800 group-hover:text-red-900 transition-colors mb-2 line-clamp-2">
+                {doc.title}
+              </h3>
+              <div className="flex justify-between items-end mt-4 pt-4 border-t border-stone-100">
+                 <span className="text-xs text-stone-400 italic">Đăng ngày {new Date(doc.created_at).toLocaleDateString('vi-VN')}</span>
+                 {isAdmin && (
+                    <button onClick={() => handleDelete(doc.id)} className="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 p-2 rounded-full transition-colors" title="Xóa video">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
+                 )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      {filteredDocs.length === 0 && <div className="text-center text-stone-400 italic font-serif py-20 text-lg">Không tìm thấy video nào.</div>}
 
-      {/* Modal Thêm Video */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 animate-in zoom-in duration-200">
-            <h3 className="text-xl font-bold mb-4 text-red-900">Đăng Video Mới</h3>
-            <form onSubmit={handleAdd}>
-              <div className="mb-4">
-                <label className="block text-sm font-bold mb-1">Tiêu đề video</label>
-                <input required className="w-full border p-2 rounded" 
-                  value={title} onChange={e => setTitle(e.target.value)} 
-                  placeholder="VD: Bài quyền nhập môn..." />
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-[#fdfbf7] rounded-3xl shadow-2xl w-full max-w-md p-8 border-4 border-double border-red-900/20 animate-in zoom-in duration-300">
+            <h3 className="text-2xl font-serif font-bold mb-6 text-red-900 text-center uppercase whitespace-nowrap">Đăng Tư Liệu Mới</h3>
+            <form onSubmit={handleAdd} className="space-y-5">
+              <div>
+                <label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Tiêu đề video</label>
+                <input required className="w-full border border-stone-200 p-3 rounded-xl focus:border-red-800 outline-none bg-white shadow-sm font-serif" 
+                  value={title} onChange={e => setTitle(e.target.value)} placeholder="VD: Bài quyền nhập môn..." />
               </div>
-              
-              <div className="mb-6">
-                <label className="block text-sm font-bold mb-1">Link Youtube</label>
-                <input required className="w-full border p-2 rounded" 
-                  value={videoUrl} onChange={e => setVideoUrl(e.target.value)} 
-                  placeholder="https://www.youtube.com/watch?v=..." />
+              <div>
+                <label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Link Youtube / Video</label>
+                <input required className="w-full border border-stone-200 p-3 rounded-xl focus:border-red-800 outline-none bg-white shadow-sm font-sans" 
+                  value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="https://..." />
               </div>
-
-              <div className="flex justify-end gap-3">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Hủy</button>
-                <button type="submit" className="px-6 py-2 bg-red-800 text-white font-bold rounded">Đăng</button>
+              <div className="flex justify-end gap-3 pt-4">
+                <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2 text-stone-500 hover:bg-stone-100 rounded-xl font-bold transition-colors">Hủy</button>
+                <button type="submit" className="px-6 py-2 bg-red-900 text-yellow-50 rounded-xl hover:bg-red-800 font-bold shadow-lg">Đăng Ngay</button>
               </div>
             </form>
           </div>

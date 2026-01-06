@@ -14,78 +14,83 @@ export async function POST(req: Request) {
 
     if (!id) throw new Error("Thiếu ID người dùng");
 
-    // BƯỚC 1: Lấy thông tin Profile hiện tại để xem đã có Auth chưa
+    // 1. Lấy thông tin Profile hiện tại
     const { data: currentProfile, error: fetchError } = await supabaseAdmin
       .from('profiles')
-      .select('auth_id, email')
+      .select('auth_id')
       .eq('id', id)
       .single();
 
     if (fetchError || !currentProfile) {
-      throw new Error("Không tìm thấy hồ sơ người dùng này trong Database");
+      throw new Error("Không tìm thấy hồ sơ người dùng này");
     }
 
     let authIdToUpdate = currentProfile.auth_id;
     let isNewAuth = false;
 
-    // BƯỚC 2: Kiểm tra User bên hệ thống Auth
-    if (authIdToUpdate) {
-      // Nếu profile đã có auth_id, thử lấy user đó xem có tồn tại không
-      const { data: authUser, error: checkAuthError } = await supabaseAdmin.auth.admin.getUserById(authIdToUpdate);
-      
-      if (checkAuthError || !authUser) {
-        // Có ID trong profile nhưng không tìm thấy trong Auth -> Coi như chưa có
-        authIdToUpdate = null; 
-      }
+    // --- LOGIC QUAN TRỌNG: CHỈ XỬ LÝ AUTH NẾU CÓ GỬI EMAIL HOẶC PASS ---
+    // (Nếu chỉ sửa tên, ngày sinh... thì bỏ qua đoạn này để tránh lỗi cho Võ sinh)
+    const hasAuthData = email || (password && password.trim() !== "");
+
+    if (hasAuthData) {
+        
+        // Kiểm tra xem User có tồn tại bên hệ thống Auth không
+        if (authIdToUpdate) {
+            const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(authIdToUpdate);
+            if (!authUser) authIdToUpdate = null; // Có ID rác nhưng không có user thật -> Coi như chưa có
+        }
+
+        if (authIdToUpdate) {
+            // === TRƯỜNG HỢP A: ĐÃ CÓ TÀI KHOẢN -> CẬP NHẬT ===
+            const authUpdates: any = {};
+            if (email) authUpdates.email = email;
+            if (password && password.trim() !== "") authUpdates.password = password;
+
+            const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(
+                authIdToUpdate,
+                authUpdates
+            );
+            if (updateAuthError) throw updateAuthError;
+
+        } else {
+            // === TRƯỜNG HỢP B: CHƯA CÓ TÀI KHOẢN -> TẠO MỚI (CẤP QUYỀN) ===
+            // Bắt buộc phải có đủ cả Email và Pass mới cho tạo
+            if (!email || !password) {
+                 throw new Error("Người này chưa có tài khoản. Để cấp quyền, bạn phải nhập đủ Email và Mật khẩu!");
+            }
+
+            const { data: newAuthData, error: createAuthError } = await supabaseAdmin.auth.admin.createUser({
+                email: email,
+                password: password,
+                email_confirm: true,
+                user_metadata: { full_name: fullName }
+            });
+
+            if (createAuthError) throw createAuthError;
+
+            authIdToUpdate = newAuthData.user.id;
+            isNewAuth = true;
+        }
     }
 
-    // BƯỚC 3: Xử lý Cập nhật hoặc Tạo mới Auth
-    if (authIdToUpdate) {
-      // === TRƯỜNG HỢP A: ĐÃ CÓ TÀI KHOẢN AUTH -> CẬP NHẬT ===
-      const authUpdates: any = {};
-      if (email) authUpdates.email = email;
-      if (password && password.trim() !== "") authUpdates.password = password;
-
-      if (Object.keys(authUpdates).length > 0) {
-        const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(
-          authIdToUpdate,
-          authUpdates
-        );
-        if (updateAuthError) throw updateAuthError;
-      }
-    } else {
-      // === TRƯỜNG HỢP B: CHƯA CÓ TÀI KHOẢN AUTH -> TẠO MỚI (CẤP QUYỀN) ===
-      if (!email || !password) {
-        throw new Error("User này được tạo từ SQL chưa có tài khoản. Vui lòng nhập Email và Mật khẩu để cấp quyền!");
-      }
-
-      const { data: newAuthData, error: createAuthError } = await supabaseAdmin.auth.admin.createUser({
-        email: email,
-        password: password,
-        email_confirm: true,
-        user_metadata: { full_name: fullName }
-      });
-
-      if (createAuthError) throw createAuthError;
-
-      // Lưu lại ID mới để tí nữa update vào Profile
-      authIdToUpdate = newAuthData.user.id;
-      isNewAuth = true;
-    }
-
-    // BƯỚC 4: Cập nhật thông tin Profile
+    // 2. Cập nhật thông tin Profile (Luôn chạy)
     const updateData = { ...profileData };
 
-    // Làm sạch dữ liệu rỗng
+    // Làm sạch dữ liệu
     if (updateData.master_id === '') updateData.master_id = null;
     if (updateData.club_id === '') updateData.club_id = null;
     if (updateData.join_date === '') updateData.join_date = null;
     if (updateData.dob === '') updateData.dob = null;
+    
+    // Fix lỗi NaN cho cấp đai
+    if (typeof updateData.belt_level !== 'undefined') {
+        updateData.belt_level = Number(updateData.belt_level) || 0;
+    }
 
     if (email) updateData.email = email;
     if (fullName) updateData.full_name = fullName;
     
-    // QUAN TRỌNG: Nếu vừa tạo Auth mới, phải cập nhật auth_id vào Profile
+    // Nếu vừa tạo Auth mới thì cập nhật ID vào profile
     if (isNewAuth) {
       updateData.auth_id = authIdToUpdate;
     }
@@ -97,9 +102,9 @@ export async function POST(req: Request) {
 
     if (profileError) throw profileError;
 
-    return NextResponse.json({ success: true, message: isNewAuth ? "Đã cấp tài khoản mới thành công" : "Đã cập nhật thành công" });
+    return NextResponse.json({ success: true, message: isNewAuth ? "Đã cấp tài khoản mới" : "Cập nhật thành công" });
   } catch (error: any) {
-    console.error("Lỗi API Update:", error);
+    console.error("API Update Error:", error);
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 }
