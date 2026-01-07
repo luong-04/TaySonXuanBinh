@@ -5,11 +5,15 @@
   --foreground: #171717;
 }
 
+/* 🟢 CẤU HÌNH TAILWIND V4 ĐỂ DÙNG FONT VIỆT NAM */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  
+  /* Ép cả font-sans và font-serif đều dùng Be Vietnam Pro */
+  --font-sans: var(--font-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-vietnam-pro), ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,5 +26,23 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Fallback an toàn */
+  font-family: var(--font-vietnam-pro), sans-serif;
+}
+
+/* 🔴 FIX LỖI TÁCH CHỮ (LETTER-SPACING) */
+@layer utilities {
+  .tracking-tighter, 
+  .tracking-tight, 
+  .tracking-normal, 
+  .tracking-wide, 
+  .tracking-wider, 
+  .tracking-widest {
+    letter-spacing: 0px !important;
+  }
+}
+
+/* Ép buộc mọi phần tử dùng font xịn */
+* {
+  font-family: var(--font-vietnam-pro), sans-serif !important;
 }

@@ -9,12 +9,32 @@ const supabaseAdmin = createClient(
 
 export async function POST(req: Request) {
   try {
-    const { id } = await req.json();
+    const { id } = await req.json(); // Đây là Profile ID
     if (!id) throw new Error("Thiếu ID người dùng");
 
-    // 1. Lấy thông tin Profile trước khi xóa để kiểm tra auth_id (nếu cần)
-    // Nhưng cách nhanh nhất là cứ xóa Profile trước.
-    
+    // 1. Lấy thông tin Auth ID từ Profile trước khi làm bất cứ gì
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('auth_id, avatar_url')
+      .eq('id', id)
+      .single();
+
+    // 2. Xóa tài khoản Auth (Email/Pass) nếu tồn tại
+    if (profile?.auth_id) {
+      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(profile.auth_id);
+      if (authError) {
+        console.error("Lỗi xóa Auth:", authError);
+        // Không throw lỗi ở đây để đảm bảo vẫn xóa được Profile bên dưới
+      }
+    }
+
+    // 3. Xóa ảnh đại diện (Dọn rác)
+    if (profile?.avatar_url) {
+        const path = profile.avatar_url.split('/storage/v1/object/public/assets/')[1];
+        if (path) await supabaseAdmin.storage.from('assets').remove([path]);
+    }
+
+    // 4. Xóa Profile trong Database
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .delete()
@@ -22,22 +42,9 @@ export async function POST(req: Request) {
 
     if (profileError) throw profileError;
 
-    // 2. Cố gắng xóa User trong Auth (Nếu có)
-    // Dùng try-catch để nếu không tìm thấy User (User not found) thì KỆ NÓ, không báo lỗi.
-    try {
-      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id);
-      
-      if (authError) {
-        // Chỉ log ra server để biết, không throw error ra ngoài
-        console.log(`[Info] Không xóa được Auth User (có thể do chưa tồn tại): ${authError.message}`);
-      }
-    } catch (ignoreError) {
-      // Bỏ qua mọi lỗi liên quan đến xóa Auth, vì mục tiêu chính là xóa Profile đã xong ở bước 1
-    }
-
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("Lỗi xóa user:", error);
+    console.error("API Delete Error:", error);
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 }
