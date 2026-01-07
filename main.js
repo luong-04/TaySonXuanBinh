@@ -10,6 +10,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
+      webSecurity: false
     },
     autoHideMenuBar: true,
     // Icon chỉ hiện khi đóng gói, để dòng này cũng không sao
