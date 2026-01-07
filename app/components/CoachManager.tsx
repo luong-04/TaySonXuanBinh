@@ -155,14 +155,38 @@ export default function CoachManager({ userRole }: { userRole: string }) {
 
     try {
       setLoading(true);
-      const url = getApiUrl(isEditing ?'/api/admin/update-user' : '/api/admin/create-user');
+      const url = getApiUrl(isEditing ? '/api/admin/update-user' : '/api/admin/create-user');
       const bodyData = isEditing ? { ...formData, id: editId } : formData;
-      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bodyData), });
-      const result = await res.json();
+      
+      const res = await fetch(url, { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify(bodyData), 
+      });
+
+      // --- ĐOẠN SỬA ĐỂ BẮT LỖI ---
+      const rawText = await res.text(); // Lấy văn bản thô trước
+      console.log("Server response:", rawText); // In ra console để xem lỗi gì
+
+      if (!res.ok) {
+          throw new Error(`Server báo lỗi (${res.status}): ${rawText}`);
+      }
+
+      // Nếu không lỗi mới parse JSON
+      const result = JSON.parse(rawText); 
+      // ---------------------------
+
       if (!result.success) throw new Error(result.error);
+      
       alert(isEditing ? 'Đã cập nhật!' : 'Đã thêm mới!');
-      setShowModal(false); fetchData();
-    } catch (error: any) { alert('Lỗi: ' + error.message); } finally { setLoading(false); }
+      setShowModal(false); 
+      fetchData();
+    } catch (error: any) { 
+        console.error(error);
+        alert('Lỗi hệ thống: ' + error.message); 
+    } finally { 
+        setLoading(false); 
+    }
   };
 
   const isAdmin = userRole === 'admin' || userRole === 'master_head';

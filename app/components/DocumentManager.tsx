@@ -125,7 +125,6 @@ export default function DocumentManager({ userRole }: { userRole: string }) {
                     src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
                     title={doc.title}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    referrerPolicy="strict-origin-when-cross-origin"
                     allowFullScreen
                     style={{ border: 0 }}
                   />

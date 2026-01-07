@@ -1,6 +1,6 @@
 // QUAN TRỌNG: Thay dòng dưới bằng link Web Vercel của bạn sau khi deploy xong
 // Ví dụ: const VERCEL_URL = 'https://taysonxuanbinh.vercel.app';
-const VERCEL_URL = 'https://taysonxuanbinh.vercel.app'; 
+const VERCEL_URL = 'https://tay-son-xuan-binh.vercel.app'; 
 
 export const getApiUrl = (endpoint: string) => {
   // Nếu đang chạy trên trình duyệt (Web), dùng đường dẫn nội bộ cho nhanh
