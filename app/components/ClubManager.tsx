@@ -1,6 +1,47 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+// THÊM: Import thư viện crop ảnh
+import Cropper from 'react-easy-crop';
+import { getApiUrl } from '../lib/apiConfig';
+
+// --- THÊM: CÁC HÀM HỖ TRỢ CẮT ẢNH (Giữ nguyên code cũ, chỉ thêm phần này lên đầu) ---
+const createImage = (url: string): Promise<HTMLImageElement> =>
+  new Promise((resolve, reject) => {
+    const image = new Image();
+    image.addEventListener('load', () => resolve(image));
+    image.addEventListener('error', (error) => reject(error));
+    image.setAttribute('crossOrigin', 'anonymous');
+    image.src = url;
+  });
+
+async function getCroppedImg(imageSrc: string, pixelCrop: any): Promise<Blob | null> {
+  const image = await createImage(imageSrc);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  // Set width/height để output ra ảnh vuông (hoặc theo aspect ratio truyền vào)
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
+  ctx.drawImage(
+    image,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    pixelCrop.width,
+    pixelCrop.height
+  );
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => {
+      resolve(blob);
+    }, 'image/jpeg', 0.95); // Output dạng JPEG, chất lượng 95%
+  });
+}
+// -------------------------------------------------------------------------
+
 
 interface Region { id: string; name: string; }
 interface Club { id: string; name: string; region: string; address: string; }
@@ -83,6 +124,14 @@ export default function ClubManager({ userRole }: { userRole: string }) {
   const [showStudentModal, setShowStudentModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  // --- THÊM: States cho chức năng Crop ảnh Võ sinh ---
+  const [showStudentCropModal, setShowStudentCropModal] = useState(false);
+  const [studentImageSrc, setStudentImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+  // ---------------------------------------------------
   
   const [newRegionName, setNewRegionName] = useState('');
   const [clubForm, setClubForm] = useState({ name: '', region: '', address: '' });
@@ -156,6 +205,68 @@ export default function ClubManager({ userRole }: { userRole: string }) {
     if (error) alert(error.message); else { alert('Đã thêm CLB!'); setShowClubModal(false); fetchClubs(); setClubForm({ name: '', region: '', address: '' }); }
   };
 
+  // --- THÊM: Hàm xử lý khi chọn file ảnh (Thay thế hàm upload cũ) ---
+  const onStudentFileChange = async (e: any) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      // Đọc file dưới dạng URL để hiển thị trong cropper
+      const reader = new FileReader();
+      reader.addEventListener('load', () => {
+        setStudentImageSrc(reader.result?.toString() || null);
+        setShowStudentCropModal(true); // Mở modal crop
+        setCrop({ x: 0, y: 0 }); // Reset vị trí crop
+        setZoom(1); // Reset zoom
+      });
+      reader.readAsDataURL(file);
+      // Reset input file để có thể chọn lại cùng một file nếu muốn
+      e.target.value = null;
+    }
+  };
+
+  // --- THÊM: Hàm callback khi crop xong (lưu lại tọa độ) ---
+  const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  // --- THÊM: Hàm thực hiện cắt ảnh và upload lên Supabase ---
+  const handleStudentCropSave = async () => {
+    try {
+      setUploading(true);
+      if (!studentImageSrc || !croppedAreaPixels) {
+        alert('Chưa có dữ liệu ảnh để cắt.');
+        return;
+      }
+
+      // 1. Tạo file ảnh đã cắt từ tọa độ
+      const croppedBlob = await getCroppedImg(studentImageSrc, croppedAreaPixels);
+      if (!croppedBlob) throw new Error('Lỗi trong quá trình tạo ảnh cắt.');
+
+      // 2. Đặt tên file (dùng timestamp để tránh trùng)
+      const fileName = `student-${Date.now()}.jpg`;
+      const file = new File([croppedBlob], fileName, { type: 'image/jpeg' });
+
+      // 3. Upload lên Supabase Storage (Bucket 'assets')
+      const { error } = await supabase.storage.from('assets').upload(fileName, file);
+      if (error) throw error;
+
+      // 4. Lấy URL công khai
+      const { data } = supabase.storage.from('assets').getPublicUrl(fileName);
+
+      // 5. Cập nhật vào form và đóng modal crop
+      setStudentForm(prev => ({ ...prev, avatar_url: data.publicUrl }));
+      setShowStudentCropModal(false);
+      setStudentImageSrc(null); // Giải phóng bộ nhớ
+
+    } catch (error: any) {
+      console.error('Lỗi upload ảnh:', error);
+      alert('Lỗi khi tải ảnh lên: ' + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+  // --------------------------------------------------------------------
+
+  /* HÀM UPLOAD CŨ (ĐÃ ĐƯỢC THAY THẾ BỞI QUY TRÌNH CROP Ở TRÊN)
   const handleUploadStudentAvatar = async (event: any) => {
     try {
       setUploading(true);
@@ -172,6 +283,7 @@ export default function ClubManager({ userRole }: { userRole: string }) {
       setUploading(false);
     }
   };
+  */
 
   const handleSaveStudent = async (e: React.FormEvent) => {
     e.preventDefault(); 
@@ -180,7 +292,7 @@ export default function ClubManager({ userRole }: { userRole: string }) {
         return;
     }
     setLoading(true);
-    const url = isEditingStudent ? '/api/admin/update-user' : '/api/admin/create-user';
+    const url = isEditingStudent ? getApiUrl('/api/admin/update-user') : getApiUrl('/api/admin/create-user');
     const body: any = { 
         fullName: studentForm.full_name, 
         dob: studentForm.dob, 
@@ -202,7 +314,7 @@ export default function ClubManager({ userRole }: { userRole: string }) {
   const handleDeleteStudent = async (studentId: string, name: string) => { 
       if (!canManage) return;
       if(!confirm(`Xóa võ sinh "${name}"?`)) return; 
-      const res = await fetch('/api/admin/delete-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: studentId }), }); const result = await res.json(); 
+      const res = await fetch(getApiUrl('/api/admin/delete-user'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: studentId }), }); const result = await res.json(); 
       if(result.success) setStudents(prev => prev.filter(s => s.id !== studentId)); else alert(result.error); 
   }
   
@@ -211,7 +323,7 @@ export default function ClubManager({ userRole }: { userRole: string }) {
       if (!confirm(`Xác nhận bổ nhiệm HLV "${coach.full_name}" vào vị trí "${targetRole}"?`)) return;
 
       setLoading(true); 
-      const res = await fetch('/api/admin/update-user', { 
+      const res = await fetch(getApiUrl('/api/admin/update-user'), { 
           method: 'POST', 
           headers: { 'Content-Type': 'application/json' }, 
           body: JSON.stringify({ id: coach.id, club_id: selectedClub.id, club_role: targetRole }), 
@@ -228,8 +340,8 @@ export default function ClubManager({ userRole }: { userRole: string }) {
       } else alert(result.error); 
   };
 
-  const handleUnassign = async (coachId: string) => { if(!confirm("Gỡ chức vụ này?")) return; const res = await fetch('/api/admin/update-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: coachId, club_id: null, club_role: null }), }); const result = await res.json(); if(result.success) setStaffs(prev => prev.filter(p => p.id !== coachId)); };
-  const handleUpgrade = async (e: React.FormEvent) => { e.preventDefault(); setLoading(true); const res = await fetch('/api/admin/upgrade-student', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentId: upgradeForm.studentId, email: upgradeForm.email, password: upgradeForm.password }), }); setLoading(false); const result = await res.json(); if(result.success) { alert('Nâng cấp thành công!'); setShowUpgradeModal(false); } else alert(result.error); }
+  const handleUnassign = async (coachId: string) => { if(!confirm("Gỡ chức vụ này?")) return; const res = await fetch(getApiUrl('/api/admin/update-user'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: coachId, club_id: null, club_role: null }), }); const result = await res.json(); if(result.success) setStaffs(prev => prev.filter(p => p.id !== coachId)); };
+  const handleUpgrade = async (e: React.FormEvent) => { e.preventDefault(); setLoading(true); const res = await fetch(getApiUrl('/api/admin/upgrade-student'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentId: upgradeForm.studentId, email: upgradeForm.email, password: upgradeForm.password }), }); setLoading(false); const result = await res.json(); if(result.success) { alert('Nâng cấp thành công!'); setShowUpgradeModal(false); } else alert(result.error); }
   
   const filteredClubs = clubs.filter(c => 
       c.region === selectedRegionName && 
@@ -398,7 +510,6 @@ export default function ClubManager({ userRole }: { userRole: string }) {
       </div>
 
       {/* --- CÁC MODAL --- */}
-      {/* (Phần Modal giữ nguyên như cũ, chỉ chỉnh nhẹ className width cho responsive) */}
       {showRegionModal && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
               <form onSubmit={handleAddRegion} className="bg-white p-6 rounded shadow-lg w-full max-w-xs animate-in zoom-in duration-200">
@@ -425,14 +536,16 @@ export default function ClubManager({ userRole }: { userRole: string }) {
 
       {showStudentModal && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-              <form onSubmit={handleSaveStudent} className="bg-white p-6 rounded shadow-lg w-full max-w-sm border-t-4 border-red-900 animate-in zoom-in duration-200">
+              {/* SỬA: Thêm position relative để chứa modal crop */}
+              <form onSubmit={handleSaveStudent} className="bg-white p-6 rounded shadow-lg w-full max-w-sm border-t-4 border-red-900 animate-in zoom-in duration-200 relative">
                   <h3 className="font-bold mb-4 text-red-900 uppercase text-center">{isEditingStudent ? 'Cập Nhật' : 'Thêm Võ Sinh'}</h3>
                   <div className="flex justify-center mb-4">
+                      {/* SỬA: Thay đổi sự kiện onChange để gọi hàm crop */}
                       <label className="cursor-pointer group relative w-20 h-20 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden hover:border-red-500 transition-colors">
                           {studentForm.avatar_url ? (
                               <img src={studentForm.avatar_url} className="w-full h-full object-cover"/>
                           ) : <span className="text-2xl text-gray-400 font-light">+</span>}
-                          <input type="file" className="hidden" accept="image/*" onChange={handleUploadStudentAvatar} />
+                          <input type="file" className="hidden" accept="image/*" onChange={onStudentFileChange} />
                           <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><span className="text-[8px] text-white font-bold uppercase">Đổi ảnh</span></div>
                       </label>
                   </div>
@@ -447,6 +560,49 @@ export default function ClubManager({ userRole }: { userRole: string }) {
                       <div><label className="text-xs font-bold text-gray-500">Ngày nhập môn</label><input type="date" required className="w-full border p-2 rounded cursor-pointer" value={studentForm.join_date} onChange={e => setStudentForm({...studentForm, join_date: e.target.value})} /></div>
                   </div>
                   <div className="flex justify-end gap-2 mt-6"><button type="button" onClick={() => setShowStudentModal(false)} className="px-3 py-1 text-gray-500 hover:bg-gray-100 rounded">Hủy</button><button disabled={loading || uploading} className="px-4 py-1 bg-red-900 text-white rounded font-bold shadow">{loading || uploading ? '...' : 'Lưu'}</button></div>
+                  
+                  {/* --- THÊM: MODAL CẮT ẢNH NẰM ĐÈ LÊN MODAL VÕ SINH --- */}
+                  {showStudentCropModal && studentImageSrc && (
+                    <div className="absolute inset-0 bg-white rounded-lg z-20 flex flex-col animate-in fade-in duration-200 overflow-hidden">
+                        <div className="p-3 bg-stone-100 border-b flex justify-between items-center">
+                            <h4 className="font-bold text-stone-700 text-sm uppercase">Căn chỉnh ảnh</h4>
+                            <button type="button" onClick={() => { setShowStudentCropModal(false); setStudentImageSrc(null); }} className="text-stone-400 hover:text-red-500 text-xl leading-none">&times;</button>
+                        </div>
+                        <div className="relative flex-1 bg-stone-900 overflow-hidden">
+                            <Cropper
+                                image={studentImageSrc}
+                                crop={crop}
+                                zoom={zoom}
+                                aspect={1} // Hình vuông
+                                onCropChange={setCrop}
+                                onCropComplete={onCropComplete}
+                                onZoomChange={setZoom}
+                                objectFit="contain"
+                            />
+                        </div>
+                        <div className="p-3 bg-white border-t space-y-3">
+                             <div className="flex items-center gap-2">
+                                <span className="text-xs text-stone-500 font-bold shrink-0">Zoom:</span>
+                                <input
+                                    type="range"
+                                    value={zoom}
+                                    min={1}
+                                    max={3}
+                                    step={0.1}
+                                    aria-labelledby="Zoom"
+                                    onChange={(e) => setZoom(Number(e.target.value))}
+                                    className="w-full h-1.5 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-red-800"
+                                />
+                             </div>
+                             <div className="flex justify-end gap-2">
+                                <button type="button" onClick={() => { setShowStudentCropModal(false); setStudentImageSrc(null); }} className="px-3 py-1.5 text-xs text-stone-500 font-bold hover:bg-stone-100 rounded">Hủy bỏ</button>
+                                <button type="button" onClick={handleStudentCropSave} disabled={uploading} className="px-4 py-1.5 text-xs bg-red-900 text-white rounded font-bold hover:bg-red-800 shadow">{uploading ? 'Đang xử lý...' : 'Cắt & Sử dụng'}</button>
+                             </div>
+                        </div>
+                    </div>
+                  )}
+                  {/* -------------------------------------------------- */}
+
               </form>
           </div>
       )}
@@ -461,7 +617,6 @@ export default function ClubManager({ userRole }: { userRole: string }) {
                               <div className="flex items-center gap-3 overflow-hidden">
                                   <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden shrink-0"><img src={c.avatar_url || "https://via.placeholder.com/50"} className="w-full h-full object-cover"/></div>
                                   <div className="overflow-hidden">
-                                      {/* SỬA: Hiển thị đầy đủ tên trong modal */}
                                       <p className="font-bold text-sm whitespace-normal break-words">{c.full_name}</p>
                                       <p className="text-xs text-gray-500 flex gap-1 flex-wrap"><span>Đai {c.belt_level}</span>{c.club_id && c.club_id !== selectedClub?.id && <span className="text-red-500">• Ở CLB khác</span>}</p>
                                   </div>
