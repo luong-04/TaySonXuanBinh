@@ -74,7 +74,7 @@ const MemberCard = ({ node }: { node: Person }) => {
                     {isGrandMaster ? 'SƯ TỔ' : 'TRƯỞNG TRÀNG'}
                 </div>
             )}
-            <h3 className={`text-base font-serif leading-tight px-1 drop-shadow-md line-clamp-2 min-h-[1.5rem] ${nameColor}`}>
+            <h3 className={`text-base font-serif leading-tight px-1 drop-shadow-md line-clamp-2 min-h-6 ${nameColor}`}>
                 {node.full_name ? node.full_name.normalize('NFC') : ''}
             </h3>
             <div className={`inline-flex items-center justify-center rounded-lg px-3 py-1 border mt-1 ${titleBg} backdrop-blur-md`}>
@@ -170,7 +170,7 @@ export default function GiaPhaTimeline() {
                     {grandMasters.length > 0 && (
                         <div className="flex flex-col items-center animate-in fade-in zoom-in duration-700 relative z-10">
                             <div className="flex gap-10 justify-center flex-wrap px-4">{grandMasters.map(p => <MemberCard key={p.id} node={p} />)}</div>
-                            <div className="h-16 w-2 bg-gradient-to-b from-yellow-300 to-yellow-600 mt-6 shadow-[0_0_15px_rgba(255,255,0,0.8)] rounded-full"></div>
+                            <div className="h-16 w-2 bg-linear-to-b from-yellow-300 to-yellow-600 mt-6 shadow-[0_0_15px_rgba(255,255,0,0.8)] rounded-full"></div>
                         </div>
                     )}
 
@@ -185,13 +185,13 @@ export default function GiaPhaTimeline() {
                         {timelineData.map((group) => (
                             <div key={group.year} id={`year-${group.year}`} className="relative flex flex-col items-center group">
                                 <div className="flex items-center gap-6 w-full mb-12">
-                                    <div className="h-1 bg-gradient-to-r from-transparent via-yellow-400 to-transparent flex-1 opacity-50"></div>
-                                    <div className="px-8 py-3 bg-[#b22222] text-yellow-300 rounded-2xl font-serif font-black text-xl shadow-2xl border-4 border-yellow-500 z-10 uppercase tracking-widest min-w-[140px] text-center relative">
+                                    <div className="h-1 bg-linear-to-tr from-transparent via-yellow-400 to-transparent flex-1 opacity-50"></div>
+                                    <div className="px-8 py-3 bg-[#b22222] text-yellow-300 rounded-2xl font-serif font-black text-xl shadow-2xl border-4 border-yellow-500 z-10 uppercase tracking-widest min-w-35 text-center relative">
                                         Năm {group.year}
                                         <div className="absolute top-1/2 -left-3 w-4 h-4 bg-yellow-400 rounded-full -translate-y-1/2 shadow border border-red-800"></div>
                                         <div className="absolute top-1/2 -right-3 w-4 h-4 bg-yellow-400 rounded-full -translate-y-1/2 shadow border border-red-800"></div>
                                     </div>
-                                    <div className="h-1 bg-gradient-to-r from-transparent via-yellow-400 to-transparent flex-1 opacity-50"></div>
+                                    <div className="h-1 bg-linear-to-tr from-transparent via-yellow-400 to-transparent flex-1 opacity-50"></div>
                                 </div>
                                 <div className="flex flex-wrap justify-center gap-x-8 gap-y-12 px-4">
                                     {group.members.map((person) => <MemberCard key={person.id} node={person} />)}
