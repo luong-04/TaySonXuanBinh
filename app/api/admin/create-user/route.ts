@@ -4,12 +4,11 @@ import crypto from 'crypto';
 
 export async function POST(req: Request) {
   try {
-    // CHUYỂN VÀO TRONG HÀM ĐỂ TRÁNH LỖI 405 TRÊN VERCEL
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !supabaseServiceKey) {
-        return NextResponse.json({ error: "Server chưa cấu hình Key" }, { status: 500 });
+        return NextResponse.json({ error: "Thiếu cấu hình Key trên Vercel" }, { status: 500 });
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
@@ -17,29 +16,15 @@ export async function POST(req: Request) {
     });
 
     const body = await req.json();
-    
-    // ĐỒNG BỘ TÊN BIẾN VỚI FORM GỬI LÊN (Cực kỳ quan trọng)
-    // Trong CoachManager bạn dùng 'full_name' nhưng ở đây bạn bóc tách 'fullName' -> Sẽ bị lỗi mất tên
-    const { email, password, full_name, role, source, ...otherData } = body;
-    
-    // Nếu CoachManager gửi 'full_name' mà bạn dùng 'fullName' ở đây thì fullName sẽ bị undefined
-    const finalFullName = full_name || body.fullName || "Không tên";
+    // Đồng bộ: CoachManager gửi full_name, ClubManager có thể gửi fullName
+    const { email, password, full_name, role, ...otherData } = body;
+    const finalFullName = full_name || body.fullName || "Người dùng mới";
 
-    // --- KIỂM TRA TRÙNG LẶP ---
-    let query = supabaseAdmin.from('profiles').select('id').eq('full_name', finalFullName);
-    if (otherData.dob) query = query.eq('dob', otherData.dob);
-    if (otherData.club_id) query = query.eq('club_id', otherData.club_id);
-
-    const { data: existingUser } = await query.maybeSingle();
-    if (existingUser) {
-        throw new Error(`Đã tồn tại thành viên "${finalFullName}" này.`);
-    }
-
-    let userId = null; 
+    let userId = null;
     let profileId = null;
 
-    // 1. Tạo user Auth
-    if (email && password) {
+    // 1. Nếu có email/pass thì tạo Auth User
+    if (email && password && password.trim() !== "") {
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
@@ -48,39 +33,32 @@ export async function POST(req: Request) {
       });
       if (authError) throw authError;
       userId = authData.user.id;
-      profileId = userId;
+      profileId = userId; 
     } else {
       profileId = crypto.randomUUID();
     }
 
-    // 2. Chuẩn bị dữ liệu Profile
-    const profileData = { ...otherData };
+    // 2. Chuẩn bị dữ liệu Profile (Làm sạch data)
+    const profileData: any = { ...otherData };
     if (profileData.master_id === '') profileData.master_id = null;
     if (profileData.club_id === '') profileData.club_id = null;
     if (profileData.join_date === '') profileData.join_date = null;
     if (profileData.dob === '') profileData.dob = null;
-    
-    if (typeof profileData.belt_level !== 'undefined') {
-        profileData.belt_level = Number(profileData.belt_level) || 0;
-    }
+    if (profileData.belt_level) profileData.belt_level = Number(profileData.belt_level);
 
     const { error: profileError } = await supabaseAdmin.from('profiles').insert({
-      id: profileId,        
-      auth_id: userId,      
-      email: email || null, 
+      id: profileId,
+      auth_id: userId,
+      email: email || null,
       full_name: finalFullName,
       role: role || 'student',
-      ...profileData 
+      ...profileData
     });
 
-    if (profileError) {
-      if (userId) await supabaseAdmin.auth.admin.deleteUser(userId);
-      throw profileError;
-    }
+    if (profileError) throw profileError;
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, id: profileId });
   } catch (error: any) {
-    console.error("API Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ success: false, error: error.message }, { status: 400 });
   }
 }

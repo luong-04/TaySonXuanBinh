@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { getApiUrl } from '../lib/apiConfig';
 import { supabase } from '../lib/supabase';
 import Cropper from 'react-easy-crop'; 
 
@@ -131,7 +130,7 @@ export default function CoachManager({ userRole }: { userRole: string }) {
   const handleDelete = async (id: string, name: string) => {
       if (!confirm(`CẢNH BÁO: XÓA VĨNH VIỄN HLV "${name}"?`)) return;
       try {
-          const res = await fetch(getApiUrl('/api/admin/delete-user'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }), });
+          const res = await fetch('/api/admin/delete-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }), });
           const result = await res.json();
           if (!result.success) throw new Error(result.error);
           alert("Đã xóa thành công!"); fetchData();
@@ -141,7 +140,7 @@ export default function CoachManager({ userRole }: { userRole: string }) {
   const handleDowngrade = async (id: string, name: string) => {
       if (!confirm(`HẠ CẤP: Chuyển HLV "${name}" xuống VÕ SINH?`)) return;
       try {
-          const res = await fetch(getApiUrl('/api/admin/downgrade-user'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }), });
+          const res = await fetch('/api/admin/downgrade-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }), });
           const result = await res.json();
           if (!result.success) throw new Error(result.error);
           alert("Đã hạ cấp thành công!"); fetchData();
@@ -149,41 +148,28 @@ export default function CoachManager({ userRole }: { userRole: string }) {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!formData.email || !formData.full_name) { alert('Thiếu tên hoặc email!'); return; }
-      if (!isEditing && !formData.password) { alert('Cần nhập mật khẩu!'); return; }
-
-      try {
+    e.preventDefault();
+    try {
         setLoading(true);
-        // Đảm bảo getApiUrl trả về đúng đường dẫn tuyệt đối hoặc tương đối chuẩn
-        const url = getApiUrl(isEditing ? '/api/admin/update-user' : '/api/admin/create-user');
+        // Dùng đường dẫn tương đối trực tiếp
+        const endpoint = isEditing ? '/api/admin/update-user' : '/api/admin/create-user';
         
-        const bodyData = isEditing ? { ...formData, id: editId } : formData;
-        
-        const res = await fetch(url, { 
-            method: 'POST', // Phương thức này gây lỗi 405 nếu route không khớp
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify(bodyData), 
+        const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(isEditing ? { ...formData, id: editId } : formData)
         });
 
-        const rawText = await res.text();
-        
-        if (!res.ok) {
-            // Nếu gặp lỗi 405, rawText thường chứa trang lỗi HTML của Vercel
-            throw new Error(`Server báo lỗi (${res.status}): ${rawText.substring(0, 100)}...`);
-        }
-
-        const result = JSON.parse(rawText); 
+        const result = await res.json();
         if (!result.success) throw new Error(result.error);
         
-        alert(isEditing ? 'Đã cập nhật!' : 'Đã thêm mới!');
-        setShowModal(false); 
+        alert('Thành công!');
+        setShowModal(false);
         fetchData();
-      } catch (error: any) { 
-          console.error(error);
-          alert('Lỗi hệ thống: ' + error.message); 
-      } finally { 
-          setLoading(false); 
+      } catch (error: any) {
+        alert('Lỗi: ' + error.message);
+      } finally {
+        setLoading(false);
       }
   };
 

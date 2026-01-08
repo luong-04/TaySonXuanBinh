@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-// KHÔNG sử dụng export const config ở đây nếu dùng App Router (/app)
+// QUAN TRỌNG: Đã xóa export const config vì gây lỗi 405 trên App Router
 
 export async function POST(req: Request) {
   try {
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
         }, { status: 500 });
     }
 
-    // 2. KHỞI TẠO CLIENT VỚI SERVICE ROLE ĐỂ CÓ QUYỀN ADMIN
+    // 2. KHỞI TẠO CLIENT ADMIN
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
         auth: { autoRefreshToken: false, persistSession: false }
     });
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
 
     if (!id) throw new Error("Thiếu ID người dùng");
 
-    // 3. LOGIC XỬ LÝ AUTH (Nếu có email hoặc password mới)
+    // 3. LOGIC XỬ LÝ AUTH
     const { data: currentProfile, error: fetchError } = await supabaseAdmin
       .from('profiles')
       .select('auth_id')
@@ -41,7 +41,6 @@ export async function POST(req: Request) {
 
     if (hasAuthData) {
         if (authIdToUpdate) {
-            // Kiểm tra xem Auth User có tồn tại thực tế không
             const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(authIdToUpdate);
             if (!authUser) authIdToUpdate = null;
         }
@@ -54,7 +53,7 @@ export async function POST(req: Request) {
             const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(authIdToUpdate, authUpdates);
             if (updateAuthError) throw updateAuthError;
         } else {
-            // TẠO USER MỚI NẾU CHƯA CÓ TÀI KHOẢN ĐĂNG NHẬP
+            // TẠO USER MỚI
             if (!email || !password) throw new Error("Cần nhập đủ Email và Mật khẩu để cấp quyền!");
             const { data: newAuthData, error: createAuthError } = await supabaseAdmin.auth.admin.createUser({
                 email: email, 
@@ -71,7 +70,7 @@ export async function POST(req: Request) {
     // 4. CẬP NHẬT TABLE PROFILES
     const updateData: any = { ...profileData };
     
-    // Xử lý các giá trị trống để tránh lỗi DB
+    // Làm sạch dữ liệu trước khi lưu
     if (updateData.master_id === '') updateData.master_id = null;
     if (updateData.club_id === '') updateData.club_id = null;
     if (updateData.join_date === '') updateData.join_date = null;

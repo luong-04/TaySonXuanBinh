@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: false,
-  output: 'export', // Bắt buộc để xuất file .exe
+  //output: 'export', // Bắt buộc để xuất file .exe
   images: { unoptimized: true }, // Để hiện ảnh trong .exe
   
   // --- PHẦN MỚI THÊM: CẤU HÌNH API ĐỂ NHẬN LỆNH TỪ APP EXE ---
