@@ -1,5 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb', // Cho phép gửi dữ liệu lên đến 10MB
+    },
+  },
+};
 
 export async function POST(req: Request) {
   try {
