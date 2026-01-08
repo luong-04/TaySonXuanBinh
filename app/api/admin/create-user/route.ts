@@ -2,83 +2,64 @@ import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
-
 export async function POST(req: Request) {
   try {
+    // CHUYỂN VÀO TRONG HÀM ĐỂ TRÁNH LỖI 405 TRÊN VERCEL
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+        return NextResponse.json({ error: "Server chưa cấu hình Key" }, { status: 500 });
+    }
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    });
+
     const body = await req.json();
     
-    // Thêm 'source' vào để loại bỏ nó ra khỏi otherData
-    const { email, password, fullName, role, source, ...otherData } = body;
+    // ĐỒNG BỘ TÊN BIẾN VỚI FORM GỬI LÊN (Cực kỳ quan trọng)
+    // Trong CoachManager bạn dùng 'full_name' nhưng ở đây bạn bóc tách 'fullName' -> Sẽ bị lỗi mất tên
+    const { email, password, full_name, role, source, ...otherData } = body;
+    
+    // Nếu CoachManager gửi 'full_name' mà bạn dùng 'fullName' ở đây thì fullName sẽ bị undefined
+    const finalFullName = full_name || body.fullName || "Không tên";
 
-    // --- LOGIC MỚI: KIỂM TRA TRÙNG LẶP ---
-    // Chỉ báo lỗi nếu trùng HỌ TÊN + NGÀY SINH + CLB (nghĩa là trùng 100% người thật)
-    // Cho phép trùng tên nếu khác ngày sinh hoặc khác CLB
-    if (fullName) {
-        let query = supabaseAdmin
-            .from('profiles')
-            .select('id')
-            .eq('full_name', fullName);
+    // --- KIỂM TRA TRÙNG LẶP ---
+    let query = supabaseAdmin.from('profiles').select('id').eq('full_name', finalFullName);
+    if (otherData.dob) query = query.eq('dob', otherData.dob);
+    if (otherData.club_id) query = query.eq('club_id', otherData.club_id);
 
-        // Nếu có ngày sinh, check thêm ngày sinh
-        if (otherData.dob) {
-            query = query.eq('dob', otherData.dob);
-        }
-        
-        // Nếu có CLB, check thêm CLB
-        if (otherData.club_id) {
-            query = query.eq('club_id', otherData.club_id);
-        }
-
-        // Nếu là HLV (có email), check chặn trùng email (Auth lo), ở đây check trùng hồ sơ
-        if (role !== 'student') {
-             // Với HLV, kiểm tra thêm số điện thoại hoặc các định danh khác nếu cần
-             // Hiện tại logic trên (Tên + DOB + CLB) là đủ mạnh để chặn spam click
-        }
-
-        const { data: existingUser } = await query.maybeSingle();
-
-        if (existingUser) {
-            throw new Error(`Đã tồn tại thành viên "${fullName}" với cùng ngày sinh tại đơn vị này. Vui lòng kiểm tra lại!`);
-        }
+    const { data: existingUser } = await query.maybeSingle();
+    if (existingUser) {
+        throw new Error(`Đã tồn tại thành viên "${finalFullName}" này.`);
     }
-    // -------------------------------------
 
     let userId = null; 
     let profileId = null;
 
-    // 1. Tạo user Auth (Nếu có email/pass - Dành cho HLV)
+    // 1. Tạo user Auth
     if (email && password) {
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
         email_confirm: true,
-        user_metadata: { full_name: fullName }
+        user_metadata: { full_name: finalFullName }
       });
       if (authError) throw authError;
-      
       userId = authData.user.id;
       profileId = userId;
     } else {
-      // Nếu là Võ sinh -> Tự tạo ID
       profileId = crypto.randomUUID();
     }
 
     // 2. Chuẩn bị dữ liệu Profile
     const profileData = { ...otherData };
-
-    // --- FIX LỖI DỮ LIỆU RỖNG ---
     if (profileData.master_id === '') profileData.master_id = null;
     if (profileData.club_id === '') profileData.club_id = null;
     if (profileData.join_date === '') profileData.join_date = null;
     if (profileData.dob === '') profileData.dob = null;
-    if (profileData.avatar_url === '') profileData.avatar_url = null; // Xử lý ảnh rỗng
     
-    // Fix lỗi NaN cấp đai
     if (typeof profileData.belt_level !== 'undefined') {
         profileData.belt_level = Number(profileData.belt_level) || 0;
     }
@@ -87,7 +68,7 @@ export async function POST(req: Request) {
       id: profileId,        
       auth_id: userId,      
       email: email || null, 
-      full_name: fullName,
+      full_name: finalFullName,
       role: role || 'student',
       ...profileData 
     });

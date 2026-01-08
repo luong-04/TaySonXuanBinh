@@ -3,12 +3,11 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
-    // 1. KIỂM TRA BIẾN MÔI TRƯỜNG (Để trong hàm cho an toàn)
+    // 1. KIỂM TRA BIẾN MÔI TRƯỜNG
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !supabaseServiceKey) {
-        // Trả về lỗi rõ ràng thay vì làm sập server
         return NextResponse.json({ 
             success: false, 
             error: "LỖI SERVER: Thiếu Service Role Key trên Vercel." 
@@ -21,11 +20,12 @@ export async function POST(req: Request) {
     });
 
     const body = await req.json();
-    const { id, email, password, fullName, ...profileData } = body;
+    // Đã sửa: bóc tách đúng biến full_name từ body gửi lên
+    const { id, email, password, full_name, ...profileData } = body;
 
     if (!id) throw new Error("Thiếu ID người dùng");
 
-    // 3. LOGIC XỬ LÝ (Giữ nguyên logic của bạn)
+    // 3. LOGIC XỬ LÝ
     const { data: currentProfile, error: fetchError } = await supabaseAdmin
       .from('profiles')
       .select('auth_id')
@@ -55,7 +55,10 @@ export async function POST(req: Request) {
             // TẠO USER MỚI
             if (!email || !password) throw new Error("Cần nhập đủ Email và Mật khẩu để cấp quyền!");
             const { data: newAuthData, error: createAuthError } = await supabaseAdmin.auth.admin.createUser({
-                email: email, password: password, email_confirm: true, user_metadata: { full_name: fullName }
+                email: email, 
+                password: password, 
+                email_confirm: true, 
+                user_metadata: { full_name: full_name } // Đã sửa: dùng full_name
             });
             if (createAuthError) throw createAuthError;
             authIdToUpdate = newAuthData.user.id;
@@ -65,7 +68,7 @@ export async function POST(req: Request) {
 
     // 4. CẬP NHẬT PROFILE
     const updateData = { ...profileData };
-    // Clean data
+    
     if (updateData.master_id === '') updateData.master_id = null;
     if (updateData.club_id === '') updateData.club_id = null;
     if (updateData.join_date === '') updateData.join_date = null;
@@ -73,7 +76,7 @@ export async function POST(req: Request) {
     if (typeof updateData.belt_level !== 'undefined') updateData.belt_level = Number(updateData.belt_level) || 0;
     
     if (email) updateData.email = email;
-    if (fullName) updateData.full_name = fullName;
+    if (full_name) updateData.full_name = full_name; // Đã sửa: dùng full_name
     if (isNewAuth) updateData.auth_id = authIdToUpdate;
 
     const { error: profileError } = await supabaseAdmin.from('profiles').update(updateData).eq('id', id);
