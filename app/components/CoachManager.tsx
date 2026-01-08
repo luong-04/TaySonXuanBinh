@@ -295,7 +295,7 @@ export default function CoachManager({ userRole }: { userRole: string }) {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div><label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Quyền quản trị</label><select className="w-full border border-stone-200 p-3 rounded-xl focus:border-red-800 outline-none bg-white shadow-sm" value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})}><option value="instructor">Giảng viên (Thường)</option><option value="master_head">Trưởng Tràng (Cao cấp)</option><option value="grandmaster">Sư Tổ</option><option value="admin">Admin Kỹ thuật</option></select></div>
-                      <div><label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Ngày nhập môn</label><input type="date" className="w-full border border-stone-200 p-3 rounded-xl focus:border-red-800 outline-none bg-white shadow-sm cursor-pointer" value={formData.join_date} onChange={e => setFormData({...formData, join_date: e.target.value})} /></div>
+                      <div><label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Ngày nhập môn</label><input type="date" className="text-red-900 w-full border border-stone-200 p-3 rounded-xl focus:border-red-800 outline-none bg-white shadow-sm cursor-pointer" value={formData.join_date} onChange={e => setFormData({...formData, join_date: e.target.value})} /></div>
                   </div>
               </div>
               <div className="col-span-1 md:col-span-12 flex flex-col-reverse sm:flex-row justify-end gap-3 pt-6 border-t border-dashed border-stone-200">
