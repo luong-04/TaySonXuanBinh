@@ -149,44 +149,42 @@ export default function CoachManager({ userRole }: { userRole: string }) {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.email || !formData.full_name) { alert('Thiếu tên hoặc email!'); return; }
-    if (!isEditing && !formData.password) { alert('Cần nhập mật khẩu!'); return; }
+      e.preventDefault();
+      if (!formData.email || !formData.full_name) { alert('Thiếu tên hoặc email!'); return; }
+      if (!isEditing && !formData.password) { alert('Cần nhập mật khẩu!'); return; }
 
-    try {
-      setLoading(true);
-      const url = getApiUrl(isEditing ? '/api/admin/update-user' : '/api/admin/create-user');
-      const bodyData = isEditing ? { ...formData, id: editId } : formData;
-      
-      const res = await fetch(url, { 
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/json' }, 
-          body: JSON.stringify(bodyData), 
-      });
+      try {
+        setLoading(true);
+        // Đảm bảo getApiUrl trả về đúng đường dẫn tuyệt đối hoặc tương đối chuẩn
+        const url = getApiUrl(isEditing ? '/api/admin/update-user' : '/api/admin/create-user');
+        
+        const bodyData = isEditing ? { ...formData, id: editId } : formData;
+        
+        const res = await fetch(url, { 
+            method: 'POST', // Phương thức này gây lỗi 405 nếu route không khớp
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify(bodyData), 
+        });
 
-      // --- ĐOẠN SỬA ĐỂ BẮT LỖI ---
-      const rawText = await res.text(); // Lấy văn bản thô trước
-      console.log("Server response:", rawText); // In ra console để xem lỗi gì
+        const rawText = await res.text();
+        
+        if (!res.ok) {
+            // Nếu gặp lỗi 405, rawText thường chứa trang lỗi HTML của Vercel
+            throw new Error(`Server báo lỗi (${res.status}): ${rawText.substring(0, 100)}...`);
+        }
 
-      if (!res.ok) {
-          throw new Error(`Server báo lỗi (${res.status}): ${rawText}`);
+        const result = JSON.parse(rawText); 
+        if (!result.success) throw new Error(result.error);
+        
+        alert(isEditing ? 'Đã cập nhật!' : 'Đã thêm mới!');
+        setShowModal(false); 
+        fetchData();
+      } catch (error: any) { 
+          console.error(error);
+          alert('Lỗi hệ thống: ' + error.message); 
+      } finally { 
+          setLoading(false); 
       }
-
-      // Nếu không lỗi mới parse JSON
-      const result = JSON.parse(rawText); 
-      // ---------------------------
-
-      if (!result.success) throw new Error(result.error);
-      
-      alert(isEditing ? 'Đã cập nhật!' : 'Đã thêm mới!');
-      setShowModal(false); 
-      fetchData();
-    } catch (error: any) { 
-        console.error(error);
-        alert('Lỗi hệ thống: ' + error.message); 
-    } finally { 
-        setLoading(false); 
-    }
   };
 
   const isAdmin = userRole === 'admin' || userRole === 'master_head';

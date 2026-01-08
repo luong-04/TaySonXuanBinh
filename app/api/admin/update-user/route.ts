@@ -1,12 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb', // Cho phép gửi dữ liệu lên đến 10MB
-    },
-  },
-};
+
+// KHÔNG sử dụng export const config ở đây nếu dùng App Router (/app)
 
 export async function POST(req: Request) {
   try {
@@ -21,18 +16,17 @@ export async function POST(req: Request) {
         }, { status: 500 });
     }
 
-    // 2. KHỞI TẠO CLIENT
+    // 2. KHỞI TẠO CLIENT VỚI SERVICE ROLE ĐỂ CÓ QUYỀN ADMIN
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
         auth: { autoRefreshToken: false, persistSession: false }
     });
 
     const body = await req.json();
-    // Đã sửa: bóc tách đúng biến full_name từ body gửi lên
     const { id, email, password, full_name, ...profileData } = body;
 
     if (!id) throw new Error("Thiếu ID người dùng");
 
-    // 3. LOGIC XỬ LÝ
+    // 3. LOGIC XỬ LÝ AUTH (Nếu có email hoặc password mới)
     const { data: currentProfile, error: fetchError } = await supabaseAdmin
       .from('profiles')
       .select('auth_id')
@@ -47,6 +41,7 @@ export async function POST(req: Request) {
 
     if (hasAuthData) {
         if (authIdToUpdate) {
+            // Kiểm tra xem Auth User có tồn tại thực tế không
             const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(authIdToUpdate);
             if (!authUser) authIdToUpdate = null;
         }
@@ -59,13 +54,13 @@ export async function POST(req: Request) {
             const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(authIdToUpdate, authUpdates);
             if (updateAuthError) throw updateAuthError;
         } else {
-            // TẠO USER MỚI
+            // TẠO USER MỚI NẾU CHƯA CÓ TÀI KHOẢN ĐĂNG NHẬP
             if (!email || !password) throw new Error("Cần nhập đủ Email và Mật khẩu để cấp quyền!");
             const { data: newAuthData, error: createAuthError } = await supabaseAdmin.auth.admin.createUser({
                 email: email, 
                 password: password, 
                 email_confirm: true, 
-                user_metadata: { full_name: full_name } // Đã sửa: dùng full_name
+                user_metadata: { full_name: full_name }
             });
             if (createAuthError) throw createAuthError;
             authIdToUpdate = newAuthData.user.id;
@@ -73,9 +68,10 @@ export async function POST(req: Request) {
         }
     }
 
-    // 4. CẬP NHẬT PROFILE
-    const updateData = { ...profileData };
+    // 4. CẬP NHẬT TABLE PROFILES
+    const updateData: any = { ...profileData };
     
+    // Xử lý các giá trị trống để tránh lỗi DB
     if (updateData.master_id === '') updateData.master_id = null;
     if (updateData.club_id === '') updateData.club_id = null;
     if (updateData.join_date === '') updateData.join_date = null;
@@ -83,13 +79,20 @@ export async function POST(req: Request) {
     if (typeof updateData.belt_level !== 'undefined') updateData.belt_level = Number(updateData.belt_level) || 0;
     
     if (email) updateData.email = email;
-    if (full_name) updateData.full_name = full_name; // Đã sửa: dùng full_name
+    if (full_name) updateData.full_name = full_name;
     if (isNewAuth) updateData.auth_id = authIdToUpdate;
 
-    const { error: profileError } = await supabaseAdmin.from('profiles').update(updateData).eq('id', id);
+    const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .update(updateData)
+        .eq('id', id);
+
     if (profileError) throw profileError;
 
-    return NextResponse.json({ success: true, message: isNewAuth ? "Đã cấp tài khoản mới" : "Cập nhật thành công" });
+    return NextResponse.json({ 
+        success: true, 
+        message: isNewAuth ? "Đã cấp tài khoản mới" : "Cập nhật thành công" 
+    });
 
   } catch (error: any) {
     console.error("API Update Error:", error);
