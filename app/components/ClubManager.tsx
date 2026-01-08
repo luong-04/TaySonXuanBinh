@@ -395,7 +395,7 @@ export default function ClubManager({ userRole }: { userRole: string }) {
                           {isAdmin && <button onClick={() => { setClubForm(prev => ({...prev, region: selectedRegionName || ''})); setShowClubModal(true); }} className="text-xs text-red-700 font-bold hover:underline shrink-0">+ Tạo mới</button>}
                       </div>
                       <div className="relative">
-                          <input type="text" placeholder="Tìm tên hoặc địa chỉ..." className="w-full pl-8 pr-2 py-1.5 rounded border border-gray-300 bg-white text-xs focus:border-red-800 focus:ring-1 focus:ring-red-800 outline-none transition-all" value={clubSearchTerm} onChange={(e) => setClubSearchTerm(e.target.value)} />
+                          <input type="text" placeholder="Tìm tên hoặc địa chỉ..." className="placeholder:text-red-700/50 w-full pl-8 pr-2 py-1.5 rounded border border-gray-300 bg-white text-xs focus:border-red-800 focus:ring-1 focus:ring-red-800 outline-none transition-all" value={clubSearchTerm} onChange={(e) => setClubSearchTerm(e.target.value)} />
                           <svg className="w-3.5 h-3.5 absolute left-2.5 top-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                       </div>
                   </div>
@@ -437,7 +437,7 @@ export default function ClubManager({ userRole }: { userRole: string }) {
                                       <p className="text-gray-600 flex items-start gap-2 text-xs md:text-sm whitespace-normal break-words mt-2"><span className="bg-gray-100 px-2 py-0.5 rounded text-xs font-bold shrink-0">{selectedClub.region}</span><span className="leading-snug">📍 {selectedClub.address}</span></p>
                                   </div>
                                   <div className="relative w-full">
-                                      <input type="text" placeholder="Tìm thành viên..." className="w-full pl-9 pr-4 py-2 rounded-full border border-gray-200 bg-gray-50 focus:border-red-800 focus:bg-white outline-none text-sm transition-all" value={memberFilter} onChange={(e) => setMemberFilter(e.target.value)} />
+                                      <input type="text" placeholder="Tìm thành viên..." className="placeholder:text-red-700/50 w-full pl-9 pr-4 py-2 rounded-full border border-gray-200 bg-gray-50 focus:border-red-800 focus:bg-white outline-none text-sm transition-all" value={memberFilter} onChange={(e) => setMemberFilter(e.target.value)} />
                                       <svg className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                                   </div>
                               </div>
@@ -513,7 +513,7 @@ export default function ClubManager({ userRole }: { userRole: string }) {
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
               <form onSubmit={handleAddRegion} className="bg-white p-6 rounded shadow-lg w-full max-w-xs animate-in zoom-in duration-200">
                   <h3 className="font-bold mb-4 text-red-900">Thêm Khu Vực Mới</h3>
-                  <input autoFocus placeholder="Tên khu vực (vd: Miền Trung)" className="w-full border p-2 rounded mb-4 focus:border-red-800 outline-none" value={newRegionName} onChange={e => setNewRegionName(e.target.value)} />
+                  <input autoFocus placeholder="Tên khu vực" className="placeholder:text-red-700/50 w-full border p-2 rounded mb-4 focus:border-red-800 outline-none" value={newRegionName} onChange={e => setNewRegionName(e.target.value)} />
                   <div className="flex justify-end gap-2"><button type="button" onClick={() => setShowRegionModal(false)} className="px-3 py-1 text-gray-500 hover:bg-gray-100 rounded">Hủy</button><button className="px-4 py-1 bg-red-900 text-white rounded font-bold shadow">Lưu</button></div>
               </form>
           </div>
@@ -549,7 +549,7 @@ export default function ClubManager({ userRole }: { userRole: string }) {
                       </label>
                   </div>
                   <div className="space-y-3">
-                      <input required placeholder="Họ và Tên" className="w-full border p-2 rounded focus:border-red-800 outline-none" value={studentForm.full_name} onChange={e => setStudentForm({...studentForm, full_name: e.target.value})} />
+                      <input required placeholder="Họ và Tên" className="placeholder:text-red-700/50 w-full border p-2 rounded focus:border-red-800 outline-none" value={studentForm.full_name} onChange={e => setStudentForm({...studentForm, full_name: e.target.value})} />
                       <div><label className="text-xs font-bold text-gray-500">Ngày sinh</label><input type="date" className="w-full border p-2 rounded cursor-pointer" value={studentForm.dob} onChange={e => setStudentForm({...studentForm, dob: e.target.value})} /></div>
                       <div>
                           <label className="text-xs font-bold text-gray-500">Cấp đai (0-22)</label>
@@ -609,7 +609,7 @@ export default function ClubManager({ userRole }: { userRole: string }) {
       {showAssignModal && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
               <div className="bg-white rounded-lg shadow-xl w-full max-w-md h-[500px] flex flex-col animate-in zoom-in duration-200">
-                  <div className="p-4 border-b bg-red-50 rounded-t-lg"><h3 className="font-bold text-red-900 uppercase">Chọn {targetRole}</h3><input autoFocus placeholder="Gõ tên để tìm nhanh..." className="w-full mt-2 p-2 border rounded focus:border-red-800 outline-none" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
+                  <div className="p-4 border-b bg-red-50 rounded-t-lg"><h3 className="font-bold text-red-900 uppercase">Chọn {targetRole}</h3><input autoFocus placeholder="Gõ tên để tìm nhanh..." className="placeholder:text-red-700/50 w-full mt-2 p-2 border rounded focus:border-red-800 outline-none" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
                   <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
                       {filteredCoachesInModal.map((c: any) => (
                           <div key={c.id} className="flex items-center gap-3 p-2 hover:bg-red-50 rounded border border-transparent hover:border-red-200 transition-colors group justify-between">

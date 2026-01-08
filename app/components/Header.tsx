@@ -177,8 +177,8 @@ export default function Header() {
           <div className="bg-white p-6 md:p-8 rounded-lg w-full max-w-sm border-t-8 border-red-900 shadow-2xl animate-in zoom-in duration-200">
             <h3 className="font-serif font-bold text-xl md:text-2xl mb-6 text-center text-red-900 uppercase">Cổng Hệ Thống</h3>
             <form onSubmit={handleLogin} className="space-y-4">
-              <input type="email" placeholder="Email định danh" required value={email} onChange={e => setEmail(e.target.value)} className="w-full border border-gray-300 p-3 rounded focus:border-red-900 outline-none text-gray-900" />
-              <input type="password" placeholder="Mật khẩu" required value={password} onChange={e => setPassword(e.target.value)} className="w-full border border-gray-300 p-3 rounded focus:border-red-900 outline-none text-gray-900" />
+              <input type="email" placeholder="Email định danh" required value={email} onChange={e => setEmail(e.target.value)} className="placeholder:text-red-700/50 w-full border border-gray-300 p-3 rounded focus:border-red-900 outline-none text-gray-900" />
+              <input type="password" placeholder="Mật khẩu" required value={password} onChange={e => setPassword(e.target.value)} className="placeholder:text-red-700/50 w-full border border-gray-300 p-3 rounded focus:border-red-900 outline-none text-gray-900" />
               <div className="flex justify-end gap-2 pt-2">
                   <button type="button" onClick={() => setShowLogin(false)} className="text-gray-500 hover:text-red-900 font-bold text-sm px-4">Đóng</button>
                   <button disabled={loading} className="flex-1 bg-red-900 text-yellow-50 font-bold py-3 rounded hover:bg-red-800 shadow">{loading ? 'Đang xác thực...' : 'MỞ CỔNG'}</button>
