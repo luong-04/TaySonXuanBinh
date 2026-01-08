@@ -3,6 +3,17 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 // THÊM: Import thư viện crop ảnh
 import Cropper from 'react-easy-crop';
+interface Student {
+  id: string;
+  full_name: string;
+  email: string | null;
+  avatar_url: string | null;
+}
+interface Club { 
+  id: string; 
+  name: string; 
+  students: Student[]; // Sửa lỗi "Property 'students' does not exist"
+}
 
 // --- THÊM: CÁC HÀM HỖ TRỢ CẮT ẢNH (Giữ nguyên code cũ, chỉ thêm phần này lên đầu) ---
 const createImage = (url: string): Promise<HTMLImageElement> =>
@@ -340,7 +351,35 @@ export default function ClubManager({ userRole }: { userRole: string }) {
   };
 
   const handleUnassign = async (coachId: string) => { if(!confirm("Gỡ chức vụ này?")) return; const res = await fetch('/api/admin/update-user/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: coachId, club_id: null, club_role: null }), }); const result = await res.json(); if(result.success) setStaffs(prev => prev.filter(p => p.id !== coachId)); };
-  const handleUpgrade = async (e: React.FormEvent) => { e.preventDefault(); setLoading(true); const res = await fetch('/api/admin/upgrade-student/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentId: upgradeForm.studentId, email: upgradeForm.email, password: upgradeForm.password }), }); setLoading(false); const result = await res.json(); if(result.success) { alert('Nâng cấp thành công!'); setShowUpgradeModal(false); } else alert(result.error); }
+  const handleUpgrade = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+        setLoading(true);
+        const res = await fetch('/api/admin/upgrade-student', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(upgradeForm),
+        });
+
+        const result = await res.json();
+        if (!result.success) throw new Error(result.error);
+
+        alert("Nâng cấp giảng viên thành công!");
+        setShowUpgradeModal(false);
+
+        // Cập nhật state cục bộ để giao diện thay đổi ngay lập tức
+        setClubs((prevClubs: Club[]) => prevClubs.map(club => ({
+            ...club,
+            students: club.students.filter((s: Student) => s.id !== upgradeForm.studentId)
+        })));
+
+        fetchClubs(); 
+      } catch (error: any) {
+        alert("Lỗi: " + error.message);
+      } finally {
+        setLoading(false);
+      }
+  };
   
   const filteredClubs = clubs.filter(c => 
       c.region === selectedRegionName && 
@@ -437,7 +476,7 @@ export default function ClubManager({ userRole }: { userRole: string }) {
                                       <p className="text-gray-600 flex items-start gap-2 text-xs md:text-sm whitespace-normal break-words mt-2"><span className="bg-gray-100 px-2 py-0.5 rounded text-xs font-bold shrink-0">{selectedClub.region}</span><span className="leading-snug">📍 {selectedClub.address}</span></p>
                                   </div>
                                   <div className="relative w-full">
-                                      <input type="text" placeholder="Tìm thành viên..." className="placeholder:text-red-700/50 w-full pl-9 pr-4 py-2 rounded-full border border-gray-200 bg-gray-50 focus:border-red-800 focus:bg-white outline-none text-sm transition-all" value={memberFilter} onChange={(e) => setMemberFilter(e.target.value)} />
+                                      <input type="text" placeholder="Tìm thành viên..." className="text-red-900 placeholder:text-red-700/50 w-full pl-9 pr-4 py-2 rounded-full border border-gray-200 bg-gray-50 focus:border-red-800 focus:bg-white outline-none text-sm transition-all" value={memberFilter} onChange={(e) => setMemberFilter(e.target.value)} />
                                       <svg className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                                   </div>
                               </div>
@@ -513,7 +552,7 @@ export default function ClubManager({ userRole }: { userRole: string }) {
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
               <form onSubmit={handleAddRegion} className="bg-white p-6 rounded shadow-lg w-full max-w-xs animate-in zoom-in duration-200">
                   <h3 className="font-bold mb-4 text-red-900">Thêm Khu Vực Mới</h3>
-                  <input autoFocus placeholder="Tên khu vực" className="placeholder:text-red-700/50 w-full border p-2 rounded mb-4 focus:border-red-800 outline-none" value={newRegionName} onChange={e => setNewRegionName(e.target.value)} />
+                  <input autoFocus placeholder="Tên khu vực" className="text-red-900 placeholder:text-red-700/50 w-full border p-2 rounded mb-4 focus:border-red-800 outline-none" value={newRegionName} onChange={e => setNewRegionName(e.target.value)} />
                   <div className="flex justify-end gap-2"><button type="button" onClick={() => setShowRegionModal(false)} className="px-3 py-1 text-gray-500 hover:bg-gray-100 rounded">Hủy</button><button className="px-4 py-1 bg-red-900 text-white rounded font-bold shadow">Lưu</button></div>
               </form>
           </div>
@@ -524,9 +563,9 @@ export default function ClubManager({ userRole }: { userRole: string }) {
               <form onSubmit={handleAddClub} className="bg-white p-6 rounded shadow-lg w-full max-w-sm animate-in zoom-in duration-200">
                   <h3 className="font-bold mb-4 text-red-900 uppercase">Thêm CLB Mới</h3>
                   <div className="space-y-3">
-                      <div><label className="text-xs font-bold text-gray-500">Tên CLB</label><input required className="w-full border p-2 rounded focus:border-red-800 outline-none" value={clubForm.name} onChange={e => setClubForm({...clubForm, name: e.target.value})} /></div>
+                      <div><label className="text-xs font-bold text-gray-500">Tên CLB</label><input required className="text-red-900 w-full border p-2 rounded focus:border-red-800 outline-none" value={clubForm.name} onChange={e => setClubForm({...clubForm, name: e.target.value})} /></div>
                       <div><label className="text-xs font-bold text-gray-500">Khu vực</label><select className="w-full border p-2 rounded focus:border-red-800 outline-none" value={clubForm.region} onChange={e => setClubForm({...clubForm, region: e.target.value})}><option value="">-- Chọn khu vực --</option>{regions.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}</select></div>
-                      <div><label className="text-xs font-bold text-gray-500">Địa chỉ</label><input className="w-full border p-2 rounded focus:border-red-800 outline-none" value={clubForm.address} onChange={e => setClubForm({...clubForm, address: e.target.value})} /></div>
+                      <div><label className="text-xs font-bold text-gray-500">Địa chỉ</label><input className="text-red-900 w-full border p-2 rounded focus:border-red-800 outline-none" value={clubForm.address} onChange={e => setClubForm({...clubForm, address: e.target.value})} /></div>
                   </div>
                   <div className="flex justify-end gap-2 mt-6"><button type="button" onClick={() => setShowClubModal(false)} className="px-3 py-1 text-gray-500 hover:bg-gray-100 rounded">Hủy</button><button className="px-4 py-1 bg-red-900 text-white rounded font-bold shadow">Lưu</button></div>
               </form>
@@ -549,14 +588,14 @@ export default function ClubManager({ userRole }: { userRole: string }) {
                       </label>
                   </div>
                   <div className="space-y-3">
-                      <input required placeholder="Họ và Tên" className="placeholder:text-red-700/50 w-full border p-2 rounded focus:border-red-800 outline-none" value={studentForm.full_name} onChange={e => setStudentForm({...studentForm, full_name: e.target.value})} />
-                      <div><label className="text-xs font-bold text-gray-500">Ngày sinh</label><input type="date" className="w-full border p-2 rounded cursor-pointer" value={studentForm.dob} onChange={e => setStudentForm({...studentForm, dob: e.target.value})} /></div>
+                      <input required placeholder="Họ và Tên" className="text-red-900 placeholder:text-red-700/50 w-full border p-2 rounded focus:border-red-800 outline-none" value={studentForm.full_name} onChange={e => setStudentForm({...studentForm, full_name: e.target.value})} />
+                      <div><label className="text-xs font-bold text-gray-500">Ngày sinh</label><input type="date" className="text-red-900 w-full border p-2 rounded cursor-pointer" value={studentForm.dob} onChange={e => setStudentForm({...studentForm, dob: e.target.value})} /></div>
                       <div>
                           <label className="text-xs font-bold text-gray-500">Cấp đai (0-22)</label>
-                          <input type="number" min="0" max="22" disabled={!isAdmin} className={`w-full border p-2 rounded ${!isAdmin ? 'bg-gray-100 text-gray-400' : ''}`} value={studentForm.belt_level} onChange={e => setStudentForm({...studentForm, belt_level: e.target.value})} />
+                          <input type="number" min="0" max="22" disabled={!isAdmin} className={`text-red-900 w-full border p-2 rounded ${!isAdmin ? 'bg-gray-100 text-gray-400' : ''}`} value={studentForm.belt_level} onChange={e => setStudentForm({...studentForm, belt_level: e.target.value})} />
                           {!isAdmin && <p className="text-[10px] text-red-500 italic">* Liên hệ Admin để sửa đai</p>}
                       </div>
-                      <div><label className="text-xs font-bold text-gray-500">Ngày nhập môn</label><input type="date" required className="w-full border p-2 rounded cursor-pointer" value={studentForm.join_date} onChange={e => setStudentForm({...studentForm, join_date: e.target.value})} /></div>
+                      <div><label className="text-xs font-bold text-gray-500">Ngày nhập môn</label><input type="date" required className="text-red-900 w-full border p-2 rounded cursor-pointer" value={studentForm.join_date} onChange={e => setStudentForm({...studentForm, join_date: e.target.value})} /></div>
                   </div>
                   <div className="flex justify-end gap-2 mt-6"><button type="button" onClick={() => setShowStudentModal(false)} className="px-3 py-1 text-gray-500 hover:bg-gray-100 rounded">Hủy</button><button disabled={loading || uploading} className="px-4 py-1 bg-red-900 text-white rounded font-bold shadow">{loading || uploading ? '...' : 'Lưu'}</button></div>
                   
@@ -590,7 +629,7 @@ export default function ClubManager({ userRole }: { userRole: string }) {
                                     step={0.1}
                                     aria-labelledby="Zoom"
                                     onChange={(e) => setZoom(Number(e.target.value))}
-                                    className="w-full h-1.5 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-red-800"
+                                    className="text-red-900 w-full h-1.5 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-red-800"
                                 />
                              </div>
                              <div className="flex justify-end gap-2">
@@ -609,7 +648,7 @@ export default function ClubManager({ userRole }: { userRole: string }) {
       {showAssignModal && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
               <div className="bg-white rounded-lg shadow-xl w-full max-w-md h-[500px] flex flex-col animate-in zoom-in duration-200">
-                  <div className="p-4 border-b bg-red-50 rounded-t-lg"><h3 className="font-bold text-red-900 uppercase">Chọn {targetRole}</h3><input autoFocus placeholder="Gõ tên để tìm nhanh..." className="placeholder:text-red-700/50 w-full mt-2 p-2 border rounded focus:border-red-800 outline-none" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
+                  <div className="p-4 border-b bg-red-50 rounded-t-lg"><h3 className="font-bold text-red-900 uppercase">Chọn {targetRole}</h3><input autoFocus placeholder="Gõ tên để tìm nhanh..." className="text-red-900 placeholder:text-red-700/50 w-full mt-2 p-2 border rounded focus:border-red-800 outline-none" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
                   <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
                       {filteredCoachesInModal.map((c: any) => (
                           <div key={c.id} className="flex items-center gap-3 p-2 hover:bg-red-50 rounded border border-transparent hover:border-red-200 transition-colors group justify-between">
@@ -641,8 +680,8 @@ export default function ClubManager({ userRole }: { userRole: string }) {
                 <h3 className="font-bold text-lg text-purple-900 mb-2 uppercase">Nâng HLV</h3>
                 <p className="text-sm text-gray-600 mb-4 whitespace-normal break-words">Nâng quyền cho: <span className="font-bold text-black">{upgradeForm.fullName}</span></p>
                 <form onSubmit={handleUpgrade} className="space-y-3">
-                    <div><label className="block text-xs font-bold text-gray-700">Email mới (*)</label><input type="email" required className="w-full border p-2 rounded outline-none focus:border-purple-600" value={upgradeForm.email} onChange={e => setUpgradeForm({...upgradeForm, email: e.target.value})} /></div>
-                    <div><label className="block text-xs font-bold text-gray-700">Mật khẩu (*)</label><input type="text" required className="w-full border p-2 rounded outline-none focus:border-purple-600" value={upgradeForm.password} onChange={e => setUpgradeForm({...upgradeForm, password: e.target.value})} /></div>
+                    <div><label className="block text-xs font-bold text-gray-700">Email mới (*)</label><input type="email" required className="text-red-900 w-full border p-2 rounded outline-none focus:border-purple-600" value={upgradeForm.email} onChange={e => setUpgradeForm({...upgradeForm, email: e.target.value})} /></div>
+                    <div><label className="block text-xs font-bold text-gray-700">Mật khẩu (*)</label><input type="text" required className="text-red-900 w-full border p-2 rounded outline-none focus:border-purple-600" value={upgradeForm.password} onChange={e => setUpgradeForm({...upgradeForm, password: e.target.value})} /></div>
                     <div className="flex justify-end gap-2 mt-4"><button type="button" onClick={() => setShowUpgradeModal(false)} className="px-3 py-2 text-gray-500 font-bold hover:bg-gray-100 rounded">Hủy</button><button type="submit" disabled={loading} className="px-4 py-2 bg-purple-700 text-white rounded font-bold hover:bg-purple-800 shadow">Xác nhận</button></div>
                 </form>
             </div>

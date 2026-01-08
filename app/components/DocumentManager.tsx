@@ -93,7 +93,7 @@ export default function DocumentManager({ userRole }: { userRole: string }) {
                 <input 
                   type="text" 
                   placeholder="Tìm tên bài quyền..." 
-                  className="placeholder:text-red-700/50 w-full pl-10 pr-4 py-2 rounded-full border border-stone-200 bg-white focus:border-red-800 outline-none text-sm transition-all shadow-sm" 
+                  className="text-red-900 placeholder:text-red-700/50 w-full pl-10 pr-4 py-2 rounded-full border border-stone-200 bg-white focus:border-red-800 outline-none text-sm transition-all shadow-sm" 
                   value={searchTerm} 
                   onChange={(e) => setSearchTerm(e.target.value)} 
                 />
@@ -166,11 +166,11 @@ export default function DocumentManager({ userRole }: { userRole: string }) {
             <form onSubmit={handleSave} className="space-y-5">
               <div>
                 <label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Tiêu đề video</label>
-                <input required className="placeholder:text-red-700/50 w-full border border-stone-200 p-3 rounded-xl focus:border-red-800 outline-none bg-white shadow-sm font-serif" value={title} onChange={e => setTitle(e.target.value)} placeholder="VD: Bài quyền nhập môn..." />
+                <input required className="text-red-900 placeholder:text-red-700/50 w-full border border-stone-200 p-3 rounded-xl focus:border-red-800 outline-none bg-white shadow-sm font-serif" value={title} onChange={e => setTitle(e.target.value)} placeholder="VD: Bài quyền nhập môn..." />
               </div>
               <div>
                 <label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Link Youtube / Video</label>
-                <input required className="placeholder:text-red-700/50 w-full border border-stone-200 p-3 rounded-xl focus:border-red-800 outline-none bg-white shadow-sm font-sans" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="https://youtu.be/..." />
+                <input required className="text-red-900 placeholder:text-red-700/50 w-full border border-stone-200 p-3 rounded-xl focus:border-red-800 outline-none bg-white shadow-sm font-sans" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="https://youtu.be/..." />
                 <p className="text-[10px] text-gray-400 mt-1 italic">* Bấm "Chia sẻ" trên YouTube để lấy link ngắn (https://youtu.be/...)</p>
               </div>
               <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4">

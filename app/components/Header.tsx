@@ -211,7 +211,7 @@ export default function Header() {
             <div className="mt-4 px-2"><input type="range" value={zoom} min={1} max={3} step={0.1} onChange={(e) => setZoom(Number(e.target.value))} className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2" /></div>
             <div className="flex justify-between gap-3 mt-6">
                 <button onClick={() => { setShowCropModal(false); setImageSrc(null); }} className="px-5 py-2 text-stone-500 font-bold hover:bg-stone-100 rounded-xl">Hủy</button>
-                <button onClick={handleCropSave} disabled={uploading} className="px-6 py-2 bg-red-900 text-yellow-50 rounded-xl font-bold hover:bg-red-800 shadow text-white">{uploading ? 'Đang Lưu...' : 'Xong & Cập Nhật'}</button>
+                <button onClick={handleCropSave} disabled={uploading} className="px-6 py-2 bg-red-900 text-yellow-50 rounded-xl font-bold hover:bg-red-800 shadow">{uploading ? 'Đang Lưu...' : 'Xong & Cập Nhật'}</button>
             </div>
           </div>
         </div>
