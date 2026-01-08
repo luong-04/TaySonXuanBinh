@@ -130,7 +130,7 @@ export default function CoachManager({ userRole }: { userRole: string }) {
   const handleDelete = async (id: string, name: string) => {
       if (!confirm(`CẢNH BÁO: XÓA VĨNH VIỄN HLV "${name}"?`)) return;
       try {
-          const res = await fetch('/api/admin/delete-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }), });
+          const res = await fetch('/api/admin/delete-user/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }), });
           const result = await res.json();
           if (!result.success) throw new Error(result.error);
           alert("Đã xóa thành công!"); fetchData();
@@ -140,7 +140,7 @@ export default function CoachManager({ userRole }: { userRole: string }) {
   const handleDowngrade = async (id: string, name: string) => {
       if (!confirm(`HẠ CẤP: Chuyển HLV "${name}" xuống VÕ SINH?`)) return;
       try {
-          const res = await fetch('/api/admin/downgrade-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }), });
+          const res = await fetch('/api/admin/downgrade-user/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }), });
           const result = await res.json();
           if (!result.success) throw new Error(result.error);
           alert("Đã hạ cấp thành công!"); fetchData();
@@ -152,7 +152,7 @@ export default function CoachManager({ userRole }: { userRole: string }) {
     try {
         setLoading(true);
         // Dùng đường dẫn tương đối trực tiếp
-        const endpoint = isEditing ? '/api/admin/update-user' : '/api/admin/create-user';
+        const endpoint = isEditing ? '/api/admin/update-user' : '/api/admin/create-user/';
         
         const res = await fetch(endpoint, {
             method: 'POST',

@@ -291,7 +291,7 @@ export default function ClubManager({ userRole }: { userRole: string }) {
         return;
     }
     setLoading(true);
-    const url = isEditingStudent ? '/api/admin/update-user' : '/api/admin/create-user';
+    const url = isEditingStudent ? '/api/admin/update-user/' : '/api/admin/create-user/';
     const body: any = { 
         fullName: studentForm.full_name, 
         dob: studentForm.dob, 
@@ -313,7 +313,7 @@ export default function ClubManager({ userRole }: { userRole: string }) {
   const handleDeleteStudent = async (studentId: string, name: string) => { 
       if (!canManage) return;
       if(!confirm(`Xóa võ sinh "${name}"?`)) return; 
-      const res = await fetch('/api/admin/delete-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: studentId }), }); const result = await res.json(); 
+      const res = await fetch('/api/admin/delete-user/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: studentId }), }); const result = await res.json(); 
       if(result.success) setStudents(prev => prev.filter(s => s.id !== studentId)); else alert(result.error); 
   }
   
@@ -322,7 +322,7 @@ export default function ClubManager({ userRole }: { userRole: string }) {
       if (!confirm(`Xác nhận bổ nhiệm HLV "${coach.full_name}" vào vị trí "${targetRole}"?`)) return;
 
       setLoading(true); 
-      const res = await fetch('/api/admin/update-user', { 
+      const res = await fetch('/api/admin/update-user/', { 
           method: 'POST', 
           headers: { 'Content-Type': 'application/json' }, 
           body: JSON.stringify({ id: coach.id, club_id: selectedClub.id, club_role: targetRole }), 
@@ -339,8 +339,8 @@ export default function ClubManager({ userRole }: { userRole: string }) {
       } else alert(result.error); 
   };
 
-  const handleUnassign = async (coachId: string) => { if(!confirm("Gỡ chức vụ này?")) return; const res = await fetch('/api/admin/update-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: coachId, club_id: null, club_role: null }), }); const result = await res.json(); if(result.success) setStaffs(prev => prev.filter(p => p.id !== coachId)); };
-  const handleUpgrade = async (e: React.FormEvent) => { e.preventDefault(); setLoading(true); const res = await fetch('/api/admin/upgrade-student', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentId: upgradeForm.studentId, email: upgradeForm.email, password: upgradeForm.password }), }); setLoading(false); const result = await res.json(); if(result.success) { alert('Nâng cấp thành công!'); setShowUpgradeModal(false); } else alert(result.error); }
+  const handleUnassign = async (coachId: string) => { if(!confirm("Gỡ chức vụ này?")) return; const res = await fetch('/api/admin/update-user/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: coachId, club_id: null, club_role: null }), }); const result = await res.json(); if(result.success) setStaffs(prev => prev.filter(p => p.id !== coachId)); };
+  const handleUpgrade = async (e: React.FormEvent) => { e.preventDefault(); setLoading(true); const res = await fetch('/api/admin/upgrade-student/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentId: upgradeForm.studentId, email: upgradeForm.email, password: upgradeForm.password }), }); setLoading(false); const result = await res.json(); if(result.success) { alert('Nâng cấp thành công!'); setShowUpgradeModal(false); } else alert(result.error); }
   
   const filteredClubs = clubs.filter(c => 
       c.region === selectedRegionName && 

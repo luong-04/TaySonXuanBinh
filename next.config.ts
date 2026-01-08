@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   images: { unoptimized: true }, // Để hiện ảnh trong .exe
   
   // --- PHẦN MỚI THÊM: CẤU HÌNH API ĐỂ NHẬN LỆNH TỪ APP EXE ---
-  async headers() {
+  /*async headers() {
     return [
       {
         source: "/api/:path*",
@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
         ]
       }
     ]
-  }
+  }*/
 };
 
 export default nextConfig;
