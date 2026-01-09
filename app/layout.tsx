@@ -12,6 +12,7 @@ const vietnamPro = Be_Vietnam_Pro({
 export const metadata: Metadata = {
   title: "Môn Phái Tây Sơn Xuân Bình",
   description: "Hệ thống quản lý môn phái",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
