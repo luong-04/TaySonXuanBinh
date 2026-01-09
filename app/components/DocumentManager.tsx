@@ -2,11 +2,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
-// KHÔNG CẦN IMPORT REACT-PLAYER NỮA (Giảm nhẹ app)
-
 interface Document { id: string; title: string; video_url: string; created_at: string; }
 
-// Hàm lấy ID video từ link YouTube (Hỗ trợ cả link ngắn và dài)
 const getYouTubeId = (url: string) => {
   if (!url) return null;
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -43,37 +40,66 @@ export default function DocumentManager({ userRole }: { userRole: string }) {
     if (!title.trim() || !videoUrl.trim()) { alert("Vui lòng nhập đủ thông tin!"); return; }
 
     if (!getYouTubeId(videoUrl)) {
-        alert("Link YouTube không hợp lệ! Vui lòng kiểm tra lại.\nVí dụ: https://youtu.be/ScMzIvxBSi4");
+        alert("Link YouTube không hợp lệ!");
         return;
     }
 
     try {
         if (isEditing && editId) {
-            await supabase.from('documents').update({ title, video_url: videoUrl }).eq('id', editId);
-            alert('Đã cập nhật video!');
+            // FIX: Đảm bảo sử dụng đúng editId trong câu lệnh update
+            const { error } = await supabase
+                .from('documents')
+                .update({ 
+                    title: title.trim(), 
+                    video_url: videoUrl.trim() 
+                })
+                .match({ id: editId }); // Sử dụng match hoặc eq để xác định bản ghi
+
+            if (error) throw error;
+            alert('Đã cập nhật video thành công!');
         } else {
-            await supabase.from('documents').insert([{ title, video_url: videoUrl }]);
+            const { error } = await supabase
+                .from('documents')
+                .insert([{ 
+                    title: title.trim(), 
+                    video_url: videoUrl.trim() 
+                }]);
+            
+            if (error) throw error;
             alert('Đã đăng video thành công!');
         }
+        
         setShowModal(false); 
-        fetchDocs();
         setTitle('');
         setVideoUrl('');
-    } catch (error: any) { alert('Lỗi: ' + error.message); }
+        setEditId(null);
+        fetchDocs(); // Tải lại danh sách mới
+    } catch (error: any) { 
+        alert('Lỗi cập nhật: ' + error.message); 
+    }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Xóa video này vĩnh viễn?')) return;
-    await supabase.from('documents').delete().eq('id', id);
+    const { error } = await supabase.from('documents').delete().eq('id', id);
+    if (error) alert("Lỗi xóa: " + error.message);
     fetchDocs();
   };
 
   const openAddModal = () => {
-      setIsEditing(false); setTitle(''); setVideoUrl(''); setShowModal(true);
+      setIsEditing(false); 
+      setEditId(null);
+      setTitle(''); 
+      setVideoUrl(''); 
+      setShowModal(true);
   };
 
   const openEditModal = (doc: Document) => {
-      setIsEditing(true); setEditId(doc.id); setTitle(doc.title); setVideoUrl(doc.video_url); setShowModal(true);
+      setIsEditing(true); 
+      setEditId(doc.id); 
+      setTitle(doc.title); 
+      setVideoUrl(doc.video_url); 
+      setShowModal(true);
   };
 
   const filteredDocs = docs.filter(doc => doc.title.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -82,7 +108,6 @@ export default function DocumentManager({ userRole }: { userRole: string }) {
 
   return (
     <div className="p-4 md:p-6 h-full bg-[#fdfbf7] overflow-y-auto custom-scrollbar">
-      {/* HEADER: Xếp dọc trên mobile (flex-col), Ngang trên PC (md:flex-row) */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 md:mb-8 border-b border-red-900/10 pb-4 gap-4">
         <h2 className="text-2xl md:text-3xl font-serif font-bold text-red-900 uppercase text-center md:text-left w-full md:w-auto">
           Kho Tàng Tư Liệu
@@ -110,14 +135,11 @@ export default function DocumentManager({ userRole }: { userRole: string }) {
         </div>
       </div>
 
-      {/* GRID VIDEO: 1 cột trên mobile, 2 cột tablet, 3 cột PC */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
         {filteredDocs.map((doc) => {
           const videoId = getYouTubeId(doc.video_url);
           return (
             <div key={doc.id} className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-stone-100 overflow-hidden flex flex-col group">
-              
-              {/* KHUNG VIDEO IFRAME */}
               <div className="relative w-full aspect-video bg-black group-hover:border-red-900/20 border-b border-stone-100">
                 {videoId ? (
                   <iframe
@@ -156,13 +178,12 @@ export default function DocumentManager({ userRole }: { userRole: string }) {
         })}
       </div>
       
-      {filteredDocs.length === 0 && <div className="text-center text-stone-400 italic font-serif py-20 text-lg">Chưa có tư liệu nào. Hãy đăng video đầu tiên!</div>}
+      {filteredDocs.length === 0 && <div className="text-center text-stone-400 italic font-serif py-20 text-lg">Chưa có tư liệu nào.</div>}
 
-      {/* MODAL RESPONSIVE */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-[#fdfbf7] rounded-3xl shadow-2xl w-full max-w-md p-6 md:p-8 border-4 border-double border-red-900/20 animate-in zoom-in duration-300">
-            <h3 className="text-xl md:text-2xl font-serif font-bold mb-6 text-red-900 text-center uppercase whitespace-nowrap">{isEditing ? 'Cập Nhật Video' : 'Đăng Tư Liệu Mới'}</h3>
+            <h3 className="text-xl md:text-2xl font-serif font-bold mb-6 text-red-900 text-center uppercase">{isEditing ? 'Cập Nhật Video' : 'Đăng Tư Liệu Mới'}</h3>
             <form onSubmit={handleSave} className="space-y-5">
               <div>
                 <label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Tiêu đề video</label>
@@ -171,7 +192,7 @@ export default function DocumentManager({ userRole }: { userRole: string }) {
               <div>
                 <label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Link Youtube / Video</label>
                 <input required className="text-red-900 placeholder:text-red-700/50 w-full border border-stone-200 p-3 rounded-xl focus:border-red-800 outline-none bg-white shadow-sm font-sans" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="https://youtu.be/..." />
-                <p className="text-[10px] text-gray-400 mt-1 italic">* Bấm "Chia sẻ" trên YouTube để lấy link ngắn (https://youtu.be/...)</p>
+                <p className="text-[10px] text-gray-400 mt-1 italic">* Bấm "Chia sẻ" trên YouTube để lấy link ngắn</p>
               </div>
               <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4">
                 <button type="button" onClick={() => setShowModal(false)} className="w-full sm:w-auto px-5 py-2 text-stone-500 hover:bg-stone-100 rounded-xl font-bold transition-colors">Hủy</button>
