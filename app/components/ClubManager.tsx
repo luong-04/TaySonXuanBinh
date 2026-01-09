@@ -1,21 +1,18 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-// THÊM: Import thư viện crop ảnh
+// Import thư viện crop ảnh
 import Cropper from 'react-easy-crop';
+
+// --- INTERFACE ---
 interface Student {
   id: string;
   full_name: string;
   email: string | null;
   avatar_url: string | null;
 }
-interface Club { 
-  id: string; 
-  name: string; 
-  students: Student[]; // Sửa lỗi "Property 'students' does not exist"
-}
 
-// --- THÊM: CÁC HÀM HỖ TRỢ CẮT ẢNH (Giữ nguyên code cũ, chỉ thêm phần này lên đầu) ---
+// --- HÀM HỖ TRỢ CẮT ẢNH (Giữ nguyên) ---
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const image = new Image();
@@ -30,7 +27,6 @@ async function getCroppedImg(imageSrc: string, pixelCrop: any): Promise<Blob | n
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
-  // Set width/height để output ra ảnh vuông (hoặc theo aspect ratio truyền vào)
   canvas.width = pixelCrop.width;
   canvas.height = pixelCrop.height;
   ctx.drawImage(
@@ -47,11 +43,10 @@ async function getCroppedImg(imageSrc: string, pixelCrop: any): Promise<Blob | n
   return new Promise((resolve) => {
     canvas.toBlob((blob) => {
       resolve(blob);
-    }, 'image/jpeg', 0.95); // Output dạng JPEG, chất lượng 95%
+    }, 'image/jpeg', 0.95);
   });
 }
 // -------------------------------------------------------------------------
-
 
 interface Region { id: string; name: string; }
 interface Club { id: string; name: string; region: string; address: string; }
@@ -61,7 +56,6 @@ const CLUB_ROLES = ["Trưởng tràng", "HLV Trưởng", "HLV Phó", "Thành vi�
 
 const RoleGroup = ({ roleName, members, isAdmin, onUnassign, onAdd }: any) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  // Hiển thị nhiều hơn để đỡ phải bấm xem thêm
   const VISIBLE_LIMIT = 8; 
   const displayMembers = isExpanded ? members : members.slice(0, VISIBLE_LIMIT);
   const hiddenCount = members.length - VISIBLE_LIMIT;
@@ -80,19 +74,13 @@ const RoleGroup = ({ roleName, members, isAdmin, onUnassign, onAdd }: any) => {
       </div>
       <div className="p-3">
         {members.length === 0 ? <p className="text-xs text-gray-400 italic text-center py-2">Chưa có nhân sự.</p> : (
-          /* SỬA QUAN TRỌNG: 
-             - Mobile: 1 cột (grid-cols-1) -> Thẻ full width
-             - PC: Tối đa 2 cột (lg:grid-cols-2) hoặc 3 cột (2xl:grid-cols-3) -> Thẻ rất rộng, tên nằm ngang thoải mái 
-          */
           <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3">
             {displayMembers.map((assignee: any) => (
               <div key={assignee.id} className="flex items-center gap-3 p-3 rounded border border-gray-100 bg-white hover:border-red-300 hover:shadow-md transition-all relative group">
-                {/* Avatar to hơn chút để cân đối */}
                 <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden border border-gray-300 shrink-0">
                   <img src={assignee.avatar_url || "https://via.placeholder.com/150"} className="w-full h-full object-cover"/>
                 </div>
                 <div className="flex-1 min-w-0">
-                  {/* Tên hiển thị ngang, xuống dòng nếu cực dài, không bị cắt */}
                   <p className="font-bold text-sm text-gray-800 whitespace-normal break-words leading-snug">{assignee.full_name}</p>
                   <p className="text-[11px] text-gray-500 mt-0.5">Đai {assignee.belt_level}/22</p>
                 </div>
@@ -129,23 +117,29 @@ export default function ClubManager({ userRole }: { userRole: string }) {
   // Mobile View State
   const [isMobileDetailOpen, setIsMobileDetailOpen] = useState(false);
 
+  // --- MODALS ---
   const [showRegionModal, setShowRegionModal] = useState(false);
+  const [showEditRegionModal, setShowEditRegionModal] = useState(false);
   const [showClubModal, setShowClubModal] = useState(false);
+  const [showEditClubModal, setShowEditClubModal] = useState(false);
   const [showStudentModal, setShowStudentModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
-  // --- THÊM: States cho chức năng Crop ảnh Võ sinh ---
+  // --- States cho chức năng Crop ảnh ---
   const [showStudentCropModal, setShowStudentCropModal] = useState(false);
   const [studentImageSrc, setStudentImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
-  // ---------------------------------------------------
   
+  // --- FORMS & EDITING STATES ---
   const [newRegionName, setNewRegionName] = useState('');
+  const [editingRegion, setEditingRegion] = useState<Region | null>(null);
+
   const [clubForm, setClubForm] = useState({ name: '', region: '', address: '' });
-  
+  const [editingClub, setEditingClub] = useState<Club | null>(null);
+
   const [studentForm, setStudentForm] = useState<{ full_name: string; dob: string; belt_level: string | number; join_date: string; avatar_url: string }>({ 
       full_name: '', dob: '', belt_level: 0, join_date: '', avatar_url: '' 
   });
@@ -205,40 +199,168 @@ export default function ClubManager({ userRole }: { userRole: string }) {
     }
   }, [showAssignModal]);
 
+  // --- LOGIC KHU VỰC ---
   const handleAddRegion = async (e: React.FormEvent) => {
       e.preventDefault(); if (!newRegionName.trim()) return;
       const { error } = await supabase.from('regions').insert([{ name: newRegionName }]);
       if (error) alert(error.message); else { alert('Đã thêm khu vực!'); setNewRegionName(''); setShowRegionModal(false); fetchRegions(); }
   };
+
+  const handleUpdateRegion = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!editingRegion || !newRegionName.trim()) return;
+      const { error } = await supabase.from('regions').update({ name: newRegionName }).eq('id', editingRegion.id);
+      if (error) alert(error.message);
+      else {
+          alert('Đã cập nhật khu vực!');
+          setNewRegionName('');
+          setShowEditRegionModal(false);
+          setEditingRegion(null);
+          fetchRegions();
+          if (selectedRegionName === editingRegion.name) setSelectedRegionName(newRegionName);
+      }
+  };
+
+  const handleDeleteRegion = async (id: string, name: string) => {
+    setLoading(true);
+    try {
+        // 1. Kiểm tra xem có CLB nào trong khu vực này không
+        const { data: clubsInRegion, error: checkError } = await supabase
+            .from('clubs')
+            .select('id')
+            .eq('region', name);
+
+        if (checkError) throw checkError;
+
+        // 2. Nếu còn CLB -> CHẶN LẠI VÀ CẢNH BÁO
+        if (clubsInRegion && clubsInRegion.length > 0) {
+            alert(`KHÔNG THỂ XÓA!\n\nKhu vực "${name}" đang chứa ${clubsInRegion.length} CLB.\n\nVui lòng sửa và chuyển các CLB này sang khu vực khác trước khi xóa.`);
+            return; // Dừng lại, không xóa
+        }
+
+        // 3. Nếu trống -> Hỏi xác nhận lần cuối
+        if (!confirm(`Bạn có chắc chắn muốn xóa khu vực "${name}" (Đã trống)?`)) return;
+
+        // 4. Thực hiện xóa khu vực
+        const { error: delRegionErr } = await supabase.from('regions').delete().eq('id', id);
+        if (delRegionErr) throw delRegionErr;
+
+        alert('Đã xóa khu vực thành công!');
+        
+        if (selectedRegionName === name) {
+            setSelectedRegionName(null);
+            setSelectedClub(null);
+            setIsMobileDetailOpen(false);
+        }
+        fetchRegions();
+        
+      } catch (error: any) {
+        alert("Lỗi khi xóa: " + error.message);
+      } finally {
+        setLoading(false);
+      }
+  };
+
+  // --- LOGIC CLB ---
   const handleAddClub = async (e: React.FormEvent) => {
     e.preventDefault(); const { error } = await supabase.from('clubs').insert([clubForm]);
     if (error) alert(error.message); else { alert('Đã thêm CLB!'); setShowClubModal(false); fetchClubs(); setClubForm({ name: '', region: '', address: '' }); }
   };
 
-  // --- THÊM: Hàm xử lý khi chọn file ảnh (Thay thế hàm upload cũ) ---
+  const handleUpdateClub = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!editingClub) return;
+      setLoading(true);
+      try {
+          const res = await fetch('/api/admin/update-club', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(editingClub),
+          });
+          const result = await res.json();
+          if (!result.success) throw new Error(result.error);
+          
+          alert('Cập nhật CLB thành công!');
+          setShowEditClubModal(false);
+          setEditingClub(null);
+          fetchClubs();
+          if (selectedClub?.id === editingClub.id) {
+              setSelectedClub({ ...selectedClub, ...editingClub } as any);
+          }
+      } catch (error: any) {
+          alert('Lỗi: ' + error.message);
+      } finally {
+          setLoading(false);
+      }
+  };
+
+  const handleDeleteClub = async (id: string, name: string) => {
+    try {
+        setLoading(true);
+
+        // 1. KIỂM TRA SỐ LƯỢNG THÀNH VIÊN TRƯỚC
+        // count: 'exact' giúp đếm số lượng bản ghi mà không cần tải dữ liệu về
+        const { count, error: checkError } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('club_id', id);
+
+        if (checkError) throw checkError;
+
+        // 2. NẾU CÒN THÀNH VIÊN -> CHẶN VÀ CẢNH BÁO
+        if (count && count > 0) {
+            alert(`KHÔNG THỂ XÓA!\n\nCLB "${name}" hiện đang có ${count} thành viên (Võ sinh/HLV).\n\nVui lòng chuyển họ sang CLB khác hoặc xóa danh sách thành viên trước khi xóa CLB.`);
+            return; // Dừng ngay, không gọi API xóa
+        }
+
+        // 3. NẾU CLB TRỐNG -> HỎI XÁC NHẬN LẦN CUỐI
+        if (!confirm(`Xác nhận: Xóa vĩnh viễn CLB "${name}" (Đã kiểm tra: 0 thành viên)?`)) return;
+
+        // 4. GỌI API XÓA
+        const res = await fetch('/api/admin/delete-club', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id }),
+        });
+        
+        const result = await res.json();
+        if (!result.success) throw new Error(result.error);
+        
+        alert('Đã xóa CLB thành công!');
+        
+        // Cập nhật lại giao diện
+        fetchClubs();
+        if (selectedClub?.id === id) {
+            setSelectedClub(null);
+            setIsMobileDetailOpen(false);
+        }
+
+      } catch (error: any) {
+        alert('Lỗi: ' + error.message);
+      } finally {
+        setLoading(false);
+      }
+  };
+  // --- CROP & UPLOAD ẢNH ---
   const onStudentFileChange = async (e: any) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      // Đọc file dưới dạng URL để hiển thị trong cropper
       const reader = new FileReader();
       reader.addEventListener('load', () => {
         setStudentImageSrc(reader.result?.toString() || null);
-        setShowStudentCropModal(true); // Mở modal crop
-        setCrop({ x: 0, y: 0 }); // Reset vị trí crop
-        setZoom(1); // Reset zoom
+        setShowStudentCropModal(true); 
+        setCrop({ x: 0, y: 0 }); 
+        setZoom(1); 
       });
       reader.readAsDataURL(file);
-      // Reset input file để có thể chọn lại cùng một file nếu muốn
       e.target.value = null;
     }
   };
 
-  // --- THÊM: Hàm callback khi crop xong (lưu lại tọa độ) ---
   const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
 
-  // --- THÊM: Hàm thực hiện cắt ảnh và upload lên Supabase ---
   const handleStudentCropSave = async () => {
     try {
       setUploading(true);
@@ -246,27 +368,16 @@ export default function ClubManager({ userRole }: { userRole: string }) {
         alert('Chưa có dữ liệu ảnh để cắt.');
         return;
       }
-
-      // 1. Tạo file ảnh đã cắt từ tọa độ
       const croppedBlob = await getCroppedImg(studentImageSrc, croppedAreaPixels);
       if (!croppedBlob) throw new Error('Lỗi trong quá trình tạo ảnh cắt.');
-
-      // 2. Đặt tên file (dùng timestamp để tránh trùng)
       const fileName = `student-${Date.now()}.jpg`;
       const file = new File([croppedBlob], fileName, { type: 'image/jpeg' });
-
-      // 3. Upload lên Supabase Storage (Bucket 'assets')
       const { error } = await supabase.storage.from('assets').upload(fileName, file);
       if (error) throw error;
-
-      // 4. Lấy URL công khai
       const { data } = supabase.storage.from('assets').getPublicUrl(fileName);
-
-      // 5. Cập nhật vào form và đóng modal crop
       setStudentForm(prev => ({ ...prev, avatar_url: data.publicUrl }));
       setShowStudentCropModal(false);
-      setStudentImageSrc(null); // Giải phóng bộ nhớ
-
+      setStudentImageSrc(null);
     } catch (error: any) {
       console.error('Lỗi upload ảnh:', error);
       alert('Lỗi khi tải ảnh lên: ' + error.message);
@@ -274,27 +385,8 @@ export default function ClubManager({ userRole }: { userRole: string }) {
       setUploading(false);
     }
   };
-  // --------------------------------------------------------------------
 
-  /* HÀM UPLOAD CŨ (ĐÃ ĐƯỢC THAY THẾ BỞI QUY TRÌNH CROP Ở TRÊN)
-  const handleUploadStudentAvatar = async (event: any) => {
-    try {
-      setUploading(true);
-      const file = event.target.files[0];
-      if (!file) return;
-      const fileName = `student-${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage.from('assets').upload(fileName, file);
-      if (error) throw error;
-      const { data } = supabase.storage.from('assets').getPublicUrl(fileName);
-      setStudentForm(prev => ({ ...prev, avatar_url: data.publicUrl }));
-    } catch (error) {
-      alert('Lỗi upload ảnh!');
-    } finally {
-      setUploading(false);
-    }
-  };
-  */
-
+  // --- LOGIC HỌC VIÊN ---
   const handleSaveStudent = async (e: React.FormEvent) => {
     e.preventDefault(); 
     if (!selectedClub || !canManage) {
@@ -351,6 +443,7 @@ export default function ClubManager({ userRole }: { userRole: string }) {
   };
 
   const handleUnassign = async (coachId: string) => { if(!confirm("Gỡ chức vụ này?")) return; const res = await fetch('/api/admin/update-user/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: coachId, club_id: null, club_role: null }), }); const result = await res.json(); if(result.success) setStaffs(prev => prev.filter(p => p.id !== coachId)); };
+  
   const handleUpgrade = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -366,13 +459,10 @@ export default function ClubManager({ userRole }: { userRole: string }) {
 
         alert("Nâng cấp giảng viên thành công!");
         setShowUpgradeModal(false);
-
-        // Cập nhật state cục bộ để giao diện thay đổi ngay lập tức
         setClubs((prevClubs: Club[]) => prevClubs.map(club => ({
             ...club,
-            students: club.students.filter((s: Student) => s.id !== upgradeForm.studentId)
+            students: (club as any).students?.filter((s: Student) => s.id !== upgradeForm.studentId) || []
         })));
-
         fetchClubs(); 
       } catch (error: any) {
         alert("Lỗi: " + error.message);
@@ -391,22 +481,9 @@ export default function ClubManager({ userRole }: { userRole: string }) {
   const filteredStaffs = staffs.filter(s => s.full_name.toLowerCase().includes(memberFilter.toLowerCase()));
   const filteredStudents = students.filter(s => s.full_name.toLowerCase().includes(memberFilter.toLowerCase()));
 
-  // Chuyển view Mobile
-  const handleSelectClub = (club: Club) => {
-      setSelectedClub(club);
-      setIsMobileDetailOpen(true);
-  };
-
-  const handleBackToList = () => {
-      setIsMobileDetailOpen(false);
-  };
-
-  const handleSelectRegion = (name: string) => {
-      setSelectedRegionName(name);
-      setSelectedClub(null);
-      setClubSearchTerm('');
-      setIsMobileDetailOpen(false);
-  };
+  const handleSelectClub = (club: Club) => { setSelectedClub(club); setIsMobileDetailOpen(true); };
+  const handleBackToList = () => { setIsMobileDetailOpen(false); };
+  const handleSelectRegion = (name: string) => { setSelectedRegionName(name); setSelectedClub(null); setClubSearchTerm(''); setIsMobileDetailOpen(false); };
 
   return (
     <div className="flex flex-col md:flex-row h-full w-full bg-stone-100 overflow-hidden relative">
@@ -417,16 +494,29 @@ export default function ClubManager({ userRole }: { userRole: string }) {
               <span className="font-bold text-red-900 uppercase text-xs whitespace-nowrap">Khu vực:</span>
               <div className="flex gap-2">
                   {regions.map(r => (
-                      <button key={r.id} onClick={() => handleSelectRegion(r.name)} className={`px-4 py-1.5 rounded-full text-xs md:text-sm font-bold transition-all whitespace-nowrap border ${selectedRegionName === r.name ? 'bg-red-900 text-yellow-50 border-red-900 shadow-md' : 'bg-white text-gray-600 border-gray-200 hover:border-red-300 hover:text-red-800'}`}>{r.name}</button>
+                      <div key={r.id} className="relative group shrink-0">
+                          <button 
+                              onClick={() => handleSelectRegion(r.name)} 
+                              className={`px-4 py-1.5 rounded-full text-xs md:text-sm font-bold transition-all whitespace-nowrap border ${selectedRegionName === r.name ? 'bg-red-900 text-yellow-50 border-red-900 shadow-md' : 'bg-white text-gray-600 border-gray-200 hover:border-red-300 hover:text-red-800'}`}
+                          >
+                              {r.name}
+                          </button>
+                          {/* CSS SỬA: Luôn hiện nút sửa khu vực trên Mobile (ko cần hover) */}
+                          {isAdmin && selectedRegionName === r.name && (
+                            <div className="absolute -top-1.5 -right-1.5 flex gap-0.5 z-20">
+                                <button onClick={(e) => { e.stopPropagation(); setEditingRegion(r); setNewRegionName(r.name); setShowEditRegionModal(true); }} className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] hover:bg-blue-600 shadow-sm border border-white">✎</button>
+                                <button onClick={(e) => { e.stopPropagation(); handleDeleteRegion(r.id, r.name); }} className="bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] hover:bg-red-600 shadow-sm border border-white">×</button>
+                            </div>
+                          )}
+                      </div>
                   ))}
               </div>
-              {isAdmin && <button onClick={() => setShowRegionModal(true)} className="w-7 h-7 rounded-full bg-gray-100 text-gray-500 hover:bg-red-100 hover:text-red-600 flex items-center justify-center font-bold border border-dashed border-gray-300 transition-colors shrink-0" title="Thêm khu vực">+</button>}
+              {isAdmin && <button onClick={() => { setNewRegionName(''); setShowRegionModal(true); }} className="w-7 h-7 rounded-full bg-gray-100 text-gray-500 hover:bg-red-100 hover:text-red-600 flex items-center justify-center font-bold border border-dashed border-gray-300 transition-colors shrink-0" title="Thêm khu vực">+</button>}
           </div>
 
-          {/* SỬA: min-h-0 quan trọng để cuộn hoạt động trong Flexbox cha */}
           <div className="flex-1 flex overflow-hidden relative min-h-0">
               
-              {/* === DANH SÁCH CLB === */}
+              {/* === DANH SÁCH CLB (Mobile List) === */}
               <div className={`${isMobileDetailOpen ? 'hidden' : 'flex'} w-full md:flex md:w-64 bg-white border-r border-gray-200 flex-col shrink-0 h-full`}>
                   <div className="p-3 bg-gray-50 border-b flex flex-col gap-3">
                       <div className="flex justify-between items-center">
@@ -434,23 +524,31 @@ export default function ClubManager({ userRole }: { userRole: string }) {
                           {isAdmin && <button onClick={() => { setClubForm(prev => ({...prev, region: selectedRegionName || ''})); setShowClubModal(true); }} className="text-xs text-red-700 font-bold hover:underline shrink-0">+ Tạo mới</button>}
                       </div>
                       <div className="relative">
-                          <input type="text" placeholder="Tìm tên hoặc địa chỉ..." className="placeholder:text-red-700/50 w-full pl-8 pr-2 py-1.5 rounded border border-gray-300 bg-white text-xs focus:border-red-800 focus:ring-1 focus:ring-red-800 outline-none transition-all" value={clubSearchTerm} onChange={(e) => setClubSearchTerm(e.target.value)} />
+                          <input type="text" placeholder="Tìm tên hoặc địa chỉ..." className="text-red-900 placeholder:text-red-700/50 w-full pl-8 pr-2 py-1.5 rounded border border-gray-300 bg-white text-xs focus:border-red-800 focus:ring-1 focus:ring-red-800 outline-none transition-all" value={clubSearchTerm} onChange={(e) => setClubSearchTerm(e.target.value)} />
                           <svg className="w-3.5 h-3.5 absolute left-2.5 top-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                       </div>
                   </div>
-                  {/* SỬA: min-h-0 để scroll mượt */}
-                  <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar min-h-0">
+                  <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar min-h-0">
                       {filteredClubs.length === 0 && <p className="text-center text-xs text-gray-400 mt-4">Không tìm thấy CLB.</p>}
                       {filteredClubs.map(club => (
-                          <div key={club.id} onClick={() => handleSelectClub(club)} className={`p-3 rounded border cursor-pointer transition-all ${selectedClub?.id === club.id ? 'bg-red-50 border-red-300 shadow-sm' : 'bg-white border-transparent hover:border-gray-200 hover:bg-gray-50'}`}>
-                              <h4 className={`font-bold text-sm whitespace-normal break-words leading-tight ${selectedClub?.id === club.id ? 'text-red-800' : 'text-gray-700'}`}>{club.name}</h4>
+                          <div key={club.id} onClick={() => handleSelectClub(club)} className={`relative p-3 rounded border cursor-pointer transition-all group ${selectedClub?.id === club.id ? 'bg-red-50 border-red-300 shadow-sm' : 'bg-white border-transparent hover:border-gray-200 hover:bg-gray-50'}`}>
+                              {/* CSS SỬA: Padding phải để tránh chữ đè lên nút */}
+                              <h4 className={`font-bold text-sm whitespace-normal break-words leading-tight pr-16 ${selectedClub?.id === club.id ? 'text-red-800' : 'text-gray-700'}`}>{club.name}</h4>
                               <p className="text-[10px] text-gray-400 whitespace-normal break-words mt-1 leading-tight">{club.address}</p>
+                              
+                              {isAdmin && (
+                                /* CSS SỬA: Nút Sửa/Xóa hiển thị luôn (opacity-100) trên mobile, ẩn (opacity-0) trên PC chờ hover */
+                                <div className="absolute top-2 right-2 flex gap-1 z-10 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                    <button onClick={(e) => { e.stopPropagation(); setEditingClub(club); setShowEditClubModal(true); }} className="bg-white border border-blue-200 text-blue-500 hover:bg-blue-500 hover:text-white p-1.5 rounded shadow-sm"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></button>
+                                    <button onClick={(e) => { e.stopPropagation(); handleDeleteClub(club.id, club.name); }} className="bg-white border border-red-200 text-red-500 hover:bg-red-500 hover:text-white p-1.5 rounded shadow-sm"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                                </div>
+                              )}
                           </div>
                       ))}
                   </div>
               </div>
 
-              {/* === CHI TIẾT CLB === */}
+              {/* === CHI TIẾT CLB (Mobile View / Desktop Detail) === */}
               <div className={`${isMobileDetailOpen ? 'flex' : 'hidden'} md:flex flex-1 flex-col bg-[url('/bg-grid.png')] bg-stone-50 h-full overflow-hidden absolute inset-0 md:static z-20 md:z-auto`}>
                   
                   {/* Nút quay lại (Mobile Only) */}
@@ -463,16 +561,26 @@ export default function ClubManager({ userRole }: { userRole: string }) {
                       </div>
                   )}
 
-                  {/* SỬA: min-h-0 để scroll mượt nội dung chi tiết */}
                   <div className="flex-1 overflow-y-auto p-4 md:p-6 relative custom-scrollbar min-h-0">
                       {!selectedClub ? (
                           <div className="flex flex-col items-center justify-center h-full text-gray-400 opacity-50"><div className="text-6xl mb-2">⛩</div><p>Chọn một CLB để quản lý</p></div>
                       ) : (
                           <div className="max-w-6xl mx-auto space-y-6 md:space-y-8 pb-32">
                               {/* Header Chi tiết */}
-                              <div className="bg-white p-4 md:p-6 rounded-lg shadow-md border-t-4 border-red-800 flex flex-col justify-between gap-4">
-                                  <div>
-                                      <h1 className="text-xl md:text-3xl font-bold text-red-900 uppercase font-serif mb-1 whitespace-normal break-words leading-tight">{selectedClub.name}</h1>
+                              <div className="bg-white p-4 md:p-6 rounded-lg shadow-md border-t-4 border-red-800 flex flex-col justify-between gap-4 relative group/header">
+                                  <div className="relative">
+                                      <h1 className="text-xl md:text-3xl font-bold text-red-900 uppercase font-serif mb-1 whitespace-normal break-words leading-tight pr-10">{selectedClub.name}</h1>
+                                      
+                                      {/* CSS SỬA: Nút Sửa to trong trang chi tiết */}
+                                      {isAdmin && (
+                                          <button 
+                                            onClick={() => { setEditingClub(selectedClub); setShowEditClubModal(true); }} 
+                                            className="absolute top-0 right-0 bg-blue-50 text-blue-600 p-2 rounded-full hover:bg-blue-600 hover:text-white shadow-sm border border-blue-100"
+                                            title="Sửa thông tin chi tiết"
+                                          >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                          </button>
+                                      )}
                                       <p className="text-gray-600 flex items-start gap-2 text-xs md:text-sm whitespace-normal break-words mt-2"><span className="bg-gray-100 px-2 py-0.5 rounded text-xs font-bold shrink-0">{selectedClub.region}</span><span className="leading-snug">📍 {selectedClub.address}</span></p>
                                   </div>
                                   <div className="relative w-full">
@@ -548,37 +656,64 @@ export default function ClubManager({ userRole }: { userRole: string }) {
       </div>
 
       {/* --- CÁC MODAL --- */}
+      {/* 1. Modal Thêm Khu Vực */}
       {showRegionModal && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
               <form onSubmit={handleAddRegion} className="bg-white p-6 rounded shadow-lg w-full max-w-xs animate-in zoom-in duration-200">
                   <h3 className="font-bold mb-4 text-red-900">Thêm Khu Vực Mới</h3>
-                  <input autoFocus placeholder="Tên khu vực" className="text-red-900 placeholder:text-red-700/50 w-full border p-2 rounded mb-4 focus:border-red-800 outline-none" value={newRegionName} onChange={e => setNewRegionName(e.target.value)} />
+                  <input autoFocus placeholder="Tên khu vực" className="text-red-900 placeholder:text-red-700/50 w-full border p-2 rounded mb-4 focus:border-red-800 outline-none font-medium" value={newRegionName} onChange={e => setNewRegionName(e.target.value)} />
                   <div className="flex justify-end gap-2"><button type="button" onClick={() => setShowRegionModal(false)} className="px-3 py-1 text-gray-500 hover:bg-gray-100 rounded">Hủy</button><button className="px-4 py-1 bg-red-900 text-white rounded font-bold shadow">Lưu</button></div>
               </form>
           </div>
       )}
 
+      {/* 2. Modal Sửa Khu Vực */}
+      {showEditRegionModal && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+              <form onSubmit={handleUpdateRegion} className="bg-white p-6 rounded shadow-lg w-full max-w-xs animate-in zoom-in duration-200">
+                  <h3 className="font-bold mb-4 text-red-900">Sửa Khu Vực</h3>
+                  <input autoFocus className="text-red-900 font-medium w-full border p-2 rounded mb-4 focus:border-red-800 outline-none" value={newRegionName} onChange={e => setNewRegionName(e.target.value)} />
+                  <div className="flex justify-end gap-2"><button type="button" onClick={() => setShowEditRegionModal(false)} className="px-3 py-1 text-gray-500 hover:bg-gray-100 rounded">Hủy</button><button className="px-4 py-1 bg-red-900 text-white rounded font-bold shadow">Cập nhật</button></div>
+              </form>
+          </div>
+      )}
+
+      {/* 3. Modal Thêm CLB */}
       {showClubModal && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
               <form onSubmit={handleAddClub} className="bg-white p-6 rounded shadow-lg w-full max-w-sm animate-in zoom-in duration-200">
                   <h3 className="font-bold mb-4 text-red-900 uppercase">Thêm CLB Mới</h3>
                   <div className="space-y-3">
-                      <div><label className="text-xs font-bold text-gray-500">Tên CLB</label><input required className="text-red-900 w-full border p-2 rounded focus:border-red-800 outline-none" value={clubForm.name} onChange={e => setClubForm({...clubForm, name: e.target.value})} /></div>
-                      <div><label className="text-xs font-bold text-gray-500">Khu vực</label><select className="w-full border p-2 rounded focus:border-red-800 outline-none" value={clubForm.region} onChange={e => setClubForm({...clubForm, region: e.target.value})}><option value="">-- Chọn khu vực --</option>{regions.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}</select></div>
-                      <div><label className="text-xs font-bold text-gray-500">Địa chỉ</label><input className="text-red-900 w-full border p-2 rounded focus:border-red-800 outline-none" value={clubForm.address} onChange={e => setClubForm({...clubForm, address: e.target.value})} /></div>
+                      <div><label className="text-xs font-bold text-gray-500">Tên CLB</label><input required className="text-red-900 font-medium w-full border p-2 rounded focus:border-red-800 outline-none" value={clubForm.name} onChange={e => setClubForm({...clubForm, name: e.target.value})} /></div>
+                      <div><label className="text-xs font-bold text-gray-500">Khu vực</label><select className="text-red-900 font-medium w-full border p-2 rounded focus:border-red-800 outline-none" value={clubForm.region} onChange={e => setClubForm({...clubForm, region: e.target.value})}><option value="">-- Chọn khu vực --</option>{regions.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}</select></div>
+                      <div><label className="text-xs font-bold text-gray-500">Địa chỉ</label><input className="text-red-900 font-medium w-full border p-2 rounded focus:border-red-800 outline-none" value={clubForm.address} onChange={e => setClubForm({...clubForm, address: e.target.value})} /></div>
                   </div>
                   <div className="flex justify-end gap-2 mt-6"><button type="button" onClick={() => setShowClubModal(false)} className="px-3 py-1 text-gray-500 hover:bg-gray-100 rounded">Hủy</button><button className="px-4 py-1 bg-red-900 text-white rounded font-bold shadow">Lưu</button></div>
               </form>
           </div>
       )}
 
+      {/* 4. Modal Sửa CLB */}
+      {showEditClubModal && editingClub && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+              <form onSubmit={handleUpdateClub} className="bg-white p-6 rounded shadow-lg w-full max-w-sm animate-in zoom-in duration-200">
+                  <h3 className="font-bold mb-4 text-red-900 uppercase">Sửa Thông Tin CLB</h3>
+                  <div className="space-y-3">
+                      <div><label className="text-xs font-bold text-gray-500">Tên CLB</label><input required className="text-red-900 font-medium w-full border p-2 rounded focus:border-red-800 outline-none" value={editingClub.name} onChange={e => setEditingClub({...editingClub, name: e.target.value})} /></div>
+                      <div><label className="text-xs font-bold text-gray-500">Khu vực</label><select className="text-red-900 font-medium w-full border p-2 rounded focus:border-red-800 outline-none" value={editingClub.region} onChange={e => setEditingClub({...editingClub, region: e.target.value})}><option value="">-- Chọn khu vực --</option>{regions.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}</select></div>
+                      <div><label className="text-xs font-bold text-gray-500">Địa chỉ</label><input className="text-red-900 font-medium w-full border p-2 rounded focus:border-red-800 outline-none" value={editingClub.address} onChange={e => setEditingClub({...editingClub, address: e.target.value})} /></div>
+                  </div>
+                  <div className="flex justify-end gap-2 mt-6"><button type="button" onClick={() => setShowEditClubModal(false)} className="px-3 py-1 text-gray-500 hover:bg-gray-100 rounded">Hủy</button><button disabled={loading} className="px-4 py-1 bg-red-900 text-white rounded font-bold shadow">Cập nhật</button></div>
+              </form>
+          </div>
+      )}
+
+      {/* 5. Modal Võ Sinh */}
       {showStudentModal && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-              {/* SỬA: Thêm position relative để chứa modal crop */}
               <form onSubmit={handleSaveStudent} className="bg-white p-6 rounded shadow-lg w-full max-w-sm border-t-4 border-red-900 animate-in zoom-in duration-200 relative">
                   <h3 className="font-bold mb-4 text-red-900 uppercase text-center">{isEditingStudent ? 'Cập Nhật' : 'Thêm Võ Sinh'}</h3>
                   <div className="flex justify-center mb-4">
-                      {/* SỬA: Thay đổi sự kiện onChange để gọi hàm crop */}
                       <label className="cursor-pointer group relative w-20 h-20 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden hover:border-red-500 transition-colors">
                           {studentForm.avatar_url ? (
                               <img src={studentForm.avatar_url} className="w-full h-full object-cover"/>
@@ -588,18 +723,18 @@ export default function ClubManager({ userRole }: { userRole: string }) {
                       </label>
                   </div>
                   <div className="space-y-3">
-                      <input required placeholder="Họ và Tên" className="text-red-900 placeholder:text-red-700/50 w-full border p-2 rounded focus:border-red-800 outline-none" value={studentForm.full_name} onChange={e => setStudentForm({...studentForm, full_name: e.target.value})} />
-                      <div><label className="text-xs font-bold text-gray-500">Ngày sinh</label><input type="date" className="text-red-900 w-full border p-2 rounded cursor-pointer" value={studentForm.dob} onChange={e => setStudentForm({...studentForm, dob: e.target.value})} /></div>
+                      <input required placeholder="Họ và Tên" className="text-red-900 placeholder:text-red-700/50 w-full border p-2 rounded focus:border-red-800 outline-none font-medium" value={studentForm.full_name} onChange={e => setStudentForm({...studentForm, full_name: e.target.value})} />
+                      <div><label className="text-xs font-bold text-gray-500">Ngày sinh</label><input type="date" className="text-red-900 w-full border p-2 rounded cursor-pointer font-medium" value={studentForm.dob} onChange={e => setStudentForm({...studentForm, dob: e.target.value})} /></div>
                       <div>
                           <label className="text-xs font-bold text-gray-500">Cấp đai (0-22)</label>
-                          <input type="number" min="0" max="22" disabled={!isAdmin} className={`text-red-900 w-full border p-2 rounded ${!isAdmin ? 'bg-gray-100 text-gray-400' : ''}`} value={studentForm.belt_level} onChange={e => setStudentForm({...studentForm, belt_level: e.target.value})} />
+                          <input type="number" min="0" max="22" disabled={!isAdmin} className={`text-red-900 font-medium w-full border p-2 rounded ${!isAdmin ? 'bg-gray-100 text-gray-400' : ''}`} value={studentForm.belt_level} onChange={e => setStudentForm({...studentForm, belt_level: e.target.value})} />
                           {!isAdmin && <p className="text-[10px] text-red-500 italic">* Liên hệ Admin để sửa đai</p>}
                       </div>
-                      <div><label className="text-xs font-bold text-gray-500">Ngày nhập môn</label><input type="date" required className="text-red-900 w-full border p-2 rounded cursor-pointer" value={studentForm.join_date} onChange={e => setStudentForm({...studentForm, join_date: e.target.value})} /></div>
+                      <div><label className="text-xs font-bold text-gray-500">Ngày nhập môn</label><input type="date" required className="text-red-900 font-medium w-full border p-2 rounded cursor-pointer" value={studentForm.join_date} onChange={e => setStudentForm({...studentForm, join_date: e.target.value})} /></div>
                   </div>
                   <div className="flex justify-end gap-2 mt-6"><button type="button" onClick={() => setShowStudentModal(false)} className="px-3 py-1 text-gray-500 hover:bg-gray-100 rounded">Hủy</button><button disabled={loading || uploading} className="px-4 py-1 bg-red-900 text-white rounded font-bold shadow">{loading || uploading ? '...' : 'Lưu'}</button></div>
                   
-                  {/* --- THÊM: MODAL CẮT ẢNH NẰM ĐÈ LÊN MODAL VÕ SINH --- */}
+                  {/* MODAL CẮT ẢNH */}
                   {showStudentCropModal && studentImageSrc && (
                     <div className="absolute inset-0 bg-white rounded-lg z-20 flex flex-col animate-in fade-in duration-200 overflow-hidden">
                         <div className="p-3 bg-stone-100 border-b flex justify-between items-center">
@@ -611,7 +746,7 @@ export default function ClubManager({ userRole }: { userRole: string }) {
                                 image={studentImageSrc}
                                 crop={crop}
                                 zoom={zoom}
-                                aspect={1} // Hình vuông
+                                aspect={1} 
                                 onCropChange={setCrop}
                                 onCropComplete={onCropComplete}
                                 onZoomChange={setZoom}
@@ -639,12 +774,11 @@ export default function ClubManager({ userRole }: { userRole: string }) {
                         </div>
                     </div>
                   )}
-                  {/* -------------------------------------------------- */}
-
               </form>
           </div>
       )}
 
+      {/* 6. Modal Assign Coach */}
       {showAssignModal && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
               <div className="bg-white rounded-lg shadow-xl w-full max-w-md h-[500px] flex flex-col animate-in zoom-in duration-200">
@@ -674,6 +808,7 @@ export default function ClubManager({ userRole }: { userRole: string }) {
           </div>
       )}
 
+      {/* 7. Modal Upgrade */}
       {showUpgradeModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
             <div className="bg-white p-6 rounded-lg w-full max-w-sm border-t-8 border-purple-600 shadow-2xl animate-in zoom-in duration-200">
