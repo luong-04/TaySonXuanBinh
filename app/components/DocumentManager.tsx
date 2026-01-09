@@ -37,42 +37,46 @@ export default function DocumentManager({ userRole }: { userRole: string }) {
 
   const handleSave = async (e: React.FormEvent) => {
   e.preventDefault();
-  if (!title.trim() || !videoUrl.trim()) { 
+  // 1. Kiểm tra đầu vào
+  const cleanTitle = title.trim();
+  const cleanUrl = videoUrl.trim();
+  
+  if (!cleanTitle || !cleanUrl) { 
     alert("Vui lòng nhập đủ thông tin!"); 
     return; 
   }
 
   try {
     if (isEditing && editId) {
-      // Cập nhật thông tin video dựa trên editId
+      // 2. Logic CẬP NHẬT (Sử dụng .eq để khóa đúng ID)
       const { error } = await supabase
         .from('documents')
         .update({ 
-          title: title.trim(), // Đảm bảo lấy giá trị mới từ state
-          video_url: videoUrl.trim() 
+          title: cleanTitle, 
+          video_url: cleanUrl 
         })
-        .eq('id', editId); // Sử dụng .eq để xác định chính xác dòng cần sửa
+        .eq('id', editId); // Quan trọng nhất: Phải có dòng này để xác định dòng cần sửa
 
       if (error) throw error;
       alert('Đã cập nhật video thành công!');
     } else {
-      // Logic thêm mới giữ nguyên
+      // 3. Logic THÊM MỚI
       const { error } = await supabase
         .from('documents')
-        .insert([{ title: title.trim(), video_url: videoUrl.trim() }]);
+        .insert([{ title: cleanTitle, video_url: cleanUrl }]);
       
       if (error) throw error;
       alert('Đã đăng video thành công!');
     }
-    
-    // ĐÓNG MODAL VÀ LÀM MỚI DỮ LIỆU
+
+    // 4. Reset trạng thái và tải lại dữ liệu
     setShowModal(false); 
     setTitle('');
     setVideoUrl('');
     setEditId(null);
-    fetchDocs(); // QUAN TRỌNG: Phải gọi lại hàm này để cập nhật giao diện ngay lập tức
+    fetchDocs(); // Gọi lại để giao diện hiển thị "Chiêu hồn sáo" ngay lập tức
   } catch (error: any) { 
-    alert('Lỗi cập nhật: ' + error.message); 
+    alert('Lỗi: ' + error.message); 
   }
 };
 
