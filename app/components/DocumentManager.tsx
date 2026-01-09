@@ -36,42 +36,45 @@ export default function DocumentManager({ userRole }: { userRole: string }) {
   };
 
   const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim() || !videoUrl.trim()) { alert("Vui lòng nhập đủ thông tin!"); return; }
+  e.preventDefault();
+  if (!title.trim() || !videoUrl.trim()) { 
+    alert("Vui lòng nhập đủ thông tin!"); 
+    return; 
+  }
 
-    try {
-        if (isEditing && editId) {
-            // SỬA LỖI: Sử dụng .eq('id', editId) để xác định chính xác dòng cần sửa
-            // Phải kiểm tra lỗi (error) từ Supabase trả về
-            const { error } = await supabase
-                .from('documents')
-                .update({ 
-                    title: title.trim(), 
-                    video_url: videoUrl.trim() 
-                })
-                .eq('id', editId); // Xác định bằng ID
+  try {
+    if (isEditing && editId) {
+      // Cập nhật thông tin video dựa trên editId
+      const { error } = await supabase
+        .from('documents')
+        .update({ 
+          title: title.trim(), // Đảm bảo lấy giá trị mới từ state
+          video_url: videoUrl.trim() 
+        })
+        .eq('id', editId); // Sử dụng .eq để xác định chính xác dòng cần sửa
 
-            if (error) throw error;
-            alert('Đã cập nhật video thành công!');
-        } else {
-            const { error } = await supabase
-                .from('documents')
-                .insert([{ title: title.trim(), video_url: videoUrl.trim() }]);
-            
-            if (error) throw error;
-            alert('Đã đăng video thành công!');
-        }
-        
-        setShowModal(false); 
-        setTitle('');
-        setVideoUrl('');
-        setEditId(null);
-        // QUAN TRỌNG: Gọi lại fetchDocs() để cập nhật lại danh sách trên giao diện
-        fetchDocs(); 
-    } catch (error: any) { 
-        alert('Lỗi hệ thống: ' + error.message); 
+      if (error) throw error;
+      alert('Đã cập nhật video thành công!');
+    } else {
+      // Logic thêm mới giữ nguyên
+      const { error } = await supabase
+        .from('documents')
+        .insert([{ title: title.trim(), video_url: videoUrl.trim() }]);
+      
+      if (error) throw error;
+      alert('Đã đăng video thành công!');
     }
-  };
+    
+    // ĐÓNG MODAL VÀ LÀM MỚI DỮ LIỆU
+    setShowModal(false); 
+    setTitle('');
+    setVideoUrl('');
+    setEditId(null);
+    fetchDocs(); // QUAN TRỌNG: Phải gọi lại hàm này để cập nhật giao diện ngay lập tức
+  } catch (error: any) { 
+    alert('Lỗi cập nhật: ' + error.message); 
+  }
+};
 
   const handleDelete = async (id: string) => {
     if (!confirm('Xóa video này vĩnh viễn?')) return;
@@ -89,12 +92,12 @@ export default function DocumentManager({ userRole }: { userRole: string }) {
   };
 
   const openEditModal = (doc: Document) => {
-      setIsEditing(true); 
-      setEditId(doc.id); // Lưu lại ID của tài liệu đang sửa
-      setTitle(doc.title); 
-      setVideoUrl(doc.video_url); 
-      setShowModal(true);
-  };
+  setIsEditing(true); 
+  setEditId(doc.id); // Đảm bảo gán đúng id từ tài liệu vào state
+  setTitle(doc.title); 
+  setVideoUrl(doc.video_url); 
+  setShowModal(true);
+};
 
   const filteredDocs = docs.filter(doc => doc.title.toLowerCase().includes(searchTerm.toLowerCase()));
 
