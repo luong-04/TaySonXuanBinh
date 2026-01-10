@@ -11,9 +11,8 @@ interface Person {
 
 interface YearGroup { year: number; members: Person[]; }
 
-// --- COMPONENT MODAL (ĐÃ TÁCH RA RIÊNG ĐỂ KHÔNG BỊ LỖI CHÓP) ---
+// --- COMPONENT MODAL (GIỮ NGUYÊN GIAO DIỆN CŨ) ---
 const BioModal = ({ node, onClose }: { node: Person; onClose: () => void }) => {
-    // Logic màu sắc cho Modal
     const getBeltColor = (level: number) => {
         if (level >= 20) return { badge: 'bg-white text-stone-900 border border-stone-300' };
         if (level >= 16) return { badge: 'bg-yellow-500 text-red-900' };
@@ -29,15 +28,12 @@ const BioModal = ({ node, onClose }: { node: Person; onClose: () => void }) => {
 
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
-            {/* HỘP THÔNG TIN: VUÔNG VỨC, TO, PHỦ MÀN HÌNH */}
             <div 
                 className="bg-[#fdfbf7] w-full max-w-4xl h-[85vh] md:h-[80vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border-4 border-double border-red-900/20 relative animate-in zoom-in-95 duration-300"
-                onClick={e => e.stopPropagation()} // Chặn click đóng khi bấm vào nội dung
+                onClick={e => e.stopPropagation()}
             >
-                {/* Nút đóng */}
                 <button onClick={onClose} className="absolute top-2 right-2 md:top-4 md:right-4 z-50 w-10 h-10 bg-stone-200 hover:bg-red-600 hover:text-white rounded-full flex items-center justify-center text-xl font-bold transition-colors">&times;</button>
 
-                {/* Header: Ảnh & Tên */}
                 <div className="shrink-0 bg-linear-to-b from-stone-100 to-white p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 border-b border-red-900/10">
                     <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-stone-200 shadow-xl overflow-hidden shrink-0 bg-stone-300">
                         <img src={node.avatar_url || "https://via.placeholder.com/150"} className="w-full h-full object-cover" />
@@ -55,7 +51,6 @@ const BioModal = ({ node, onClose }: { node: Person; onClose: () => void }) => {
                     </div>
                 </div>
 
-                {/* Nội dung: Cuộn riêng biệt */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-10 bg-white">
                     {node.bio ? (
                         <div className="prose prose-stone max-w-none text-base md:text-lg leading-relaxed text-justify font-serif text-stone-800 whitespace-pre-wrap">
@@ -72,12 +67,11 @@ const BioModal = ({ node, onClose }: { node: Person; onClose: () => void }) => {
     );
 }
 
-// --- CARD THÀNH VIÊN (ĐÃ BỎ MODAL RA KHỎI ĐÂY) ---
+// --- CARD THÀNH VIÊN (GIỮ NGUYÊN GIAO DIỆN CŨ) ---
 const MemberCard = ({ node, onSelect }: { node: Person; onSelect: (p: Person) => void }) => {
   const isGrandMaster = node.role === 'grandmaster';
   const isMasterHead = node.role === 'master_head';
 
-  // --- LOGIC MÀU SẮC ĐAI & NỀN Ô CẤP ĐAI ---
   const getBeltStyle = (level: number) => {
     if (level >= 20) return { border: 'border-white', bg: 'bg-white text-stone-900 border border-stone-300', nameHover: 'group-hover:text-white' };
     if (level >= 16) return { border: 'border-yellow-400', bg: 'bg-yellow-500 text-red-900', nameHover: 'group-hover:text-yellow-300' };
@@ -108,23 +102,20 @@ const MemberCard = ({ node, onSelect }: { node: Person; onSelect: (p: Person) =>
     cardClasses = "bg-linear-to-b from-[#8B0000] to-[#5c0000] border-2 border-[#b22222] shadow-lg hover:shadow-yellow-500/30 hover:scale-105 hover:border-yellow-500 transition-all z-10";
     avatarBorder = `${style.border} group-hover:border-yellow-500`;
     nameColor = `text-white ${style.nameHover}`;
-    infoBadgeClass = style.bg; // Màu nền ô cấp đai lấy từ logic đai
+    infoBadgeClass = style.bg;
   }
 
   return (
     <div 
         className={`relative flex flex-col items-center p-3 rounded-xl transition-all duration-300 w-36 md:w-48 shrink-0 group cursor-pointer ${cardClasses}`}
-        onClick={() => onSelect(node)} // Bấm vào thẻ là mở Modal luôn
+        onClick={() => onSelect(node)}
     >
-        {/* Họa tiết nền */}
         <div className="absolute inset-0 opacity-20 pointer-events-none overflow-hidden rounded-xl">
              <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full border-4 border-white/10"></div>
              <div className="absolute top-8 -left-8 w-20 h-20 rounded-full border-2 border-white/5"></div>
         </div>
 
-        {/* Avatar */}
         <div className="relative z-10">
-            {/* Nút Dấu hỏi (Vẫn giữ để người dùng biết có thể bấm) */}
             {node.bio && (
                 <div className="absolute -top-2 -right-2 z-50 w-6 h-6 bg-yellow-400 text-red-900 rounded-full flex items-center justify-center text-[12px] font-black shadow border border-white animate-pulse">?</div>
             )}
@@ -139,7 +130,6 @@ const MemberCard = ({ node, onSelect }: { node: Person; onSelect: (p: Person) =>
             )}
         </div>
 
-        {/* Thông tin */}
         <div className="mt-4 text-center w-full z-10 space-y-1">
             {(isGrandMaster || isMasterHead) && (
                 <div className={`text-[9px] md:text-[10px] font-black uppercase mb-1 tracking-widest ${isGrandMaster ? 'text-red-800' : 'text-yellow-500'}`}>
@@ -150,7 +140,6 @@ const MemberCard = ({ node, onSelect }: { node: Person; onSelect: (p: Person) =>
                 {node.full_name}
             </h3>
             
-            {/* Ô CHỨA CẤP ĐAI & DANH HIỆU (CÓ MÀU NỀN) */}
             <div className={`inline-flex items-center justify-center rounded-lg px-2 md:px-3 py-1 mt-1 backdrop-blur-md shadow-sm ${infoBadgeClass}`}>
                 <span className="text-[10px] md:text-[11px] font-bold whitespace-nowrap">
                     Đai {node.belt_level}
@@ -173,7 +162,6 @@ export default function GiaPhaTimeline() {
   const [loading, setLoading] = useState(true);
   const [activeYear, setActiveYear] = useState<number | null>(null);
   
-  // STATE ĐỂ QUẢN LÝ MODAL Ở CẤP CAO NHẤT (Sửa lỗi chóp/dị)
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
 
   const fetchData = async () => {
@@ -185,12 +173,28 @@ export default function GiaPhaTimeline() {
         setMasterHeads(profiles.filter(p => p.role === 'master_head'));
         const others = profiles.filter(p => p.role !== 'grandmaster' && p.role !== 'master_head');
         const groups: Record<number, Person[]> = {};
+        
         others.forEach(p => {
             const year = new Date(p.join_date || '2024-01-01').getFullYear();
             if (!groups[year]) groups[year] = [];
             groups[year].push(p);
         });
-        setTimelineData(Object.keys(groups).map(y => ({ year: parseInt(y), members: groups[parseInt(y)] })).sort((a, b) => a.year - b.year));
+
+        // --- LOGIC SẮP XẾP MỚI ---
+        const sortedGroups = Object.keys(groups)
+          .map(y => ({ 
+            year: parseInt(y), 
+            members: groups[parseInt(y)].sort((a, b) => {
+                // Sắp xếp theo join_date TĂNG DẦN (Cũ nhất lên đầu)
+                const dateA = new Date(a.join_date || '9999-12-31').getTime();
+                const dateB = new Date(b.join_date || '9999-12-31').getTime();
+                // Nếu cùng ngày thì sắp theo ID hoặc Tên (tùy chọn), ở đây giữ nguyên
+                return dateA - dateB;
+            }) 
+          }))
+          .sort((a, b) => a.year - b.year); // Sắp xếp năm tăng dần
+
+        setTimelineData(sortedGroups);
         if(Object.keys(groups).length > 0) setActiveYear(parseInt(Object.keys(groups)[0]));
     }
     setLoading(false);
@@ -259,7 +263,7 @@ export default function GiaPhaTimeline() {
                     {/* Danh sách theo năm */}
                     <div className="w-full max-w-7xl space-y-16 md:space-y-20 relative z-10">
                         {timelineData.map((group) => (
-                            <div key={group.year} id={`year-${group.year}`} className="relative flex flex-col items-center group">
+                            <div key={group.year} id={`year-${group.year}`} className="relative flex flex-col items-center group w-full">
                                 <div className="flex items-center gap-3 md:gap-6 w-full mb-8 md:mb-12">
                                     <div className="h-1 bg-linear-to-tr from-transparent via-yellow-400 to-transparent flex-1 opacity-50"></div>
                                     <div className="px-6 md:px-8 py-2 md:py-3 bg-[#b22222] text-yellow-300 rounded-2xl font-serif font-black text-lg md:text-xl shadow-2xl border-4 border-yellow-500 z-10 uppercase tracking-widest min-w-32 md:min-w-35 text-center relative">
@@ -269,7 +273,8 @@ export default function GiaPhaTimeline() {
                                     </div>
                                     <div className="h-1 bg-linear-to-tr from-transparent via-yellow-400 to-transparent flex-1 opacity-50"></div>
                                 </div>
-                                <div className="flex flex-wrap justify-center gap-x-4 gap-y-8 md:gap-x-8 md:gap-y-12 px-2 md:px-4">
+                                {/* GRID THÀNH VIÊN: DÙNG FLEX-WRAP ĐỂ TỰ XUỐNG DÒNG */}
+                                <div className="flex flex-wrap justify-center gap-4 md:gap-8 w-full px-2">
                                     {group.members.map((person) => <MemberCard key={person.id} node={person} onSelect={setSelectedPerson} />)}
                                 </div>
                             </div>
@@ -280,7 +285,6 @@ export default function GiaPhaTimeline() {
             </div>
         </div>
 
-        {/* --- MODAL HIỂN THỊ Ở ĐÂY (NGOÀI CÙNG) ĐỂ KHÔNG BỊ LỖI CHÓP --- */}
         {selectedPerson && <BioModal node={selectedPerson} onClose={() => setSelectedPerson(null)} />}
     </div>
   );
