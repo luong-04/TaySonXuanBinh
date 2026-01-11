@@ -1,17 +1,10 @@
 import type { Metadata } from "next";
-import { Be_Vietnam_Pro } from "next/font/google"; 
 import "./globals.css";
-
-const vietnamPro = Be_Vietnam_Pro({
-  subsets: ["vietnamese"],
-  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
-  variable: "--font-vietnam-pro",
-  display: "swap",
-});
+import OneSignalInit from "./components/OneSignalInit"; // Import component thông báo
 
 export const metadata: Metadata = {
-  title: "Môn Phái Tây Sơn Xuân Bình",
-  description: "Hệ thống quản lý môn phái",
+  title: "Tây Sơn Xuân Bình",
+  description: "Cổng thông tin môn phái",
   manifest: "/manifest.json",
 };
 
@@ -22,8 +15,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi">
-      {/* 👇 QUAN TRỌNG: Phải thêm cả .variable vào đây thì CSS mới nhận font */}
-      <body className={`${vietnamPro.variable} ${vietnamPro.className} antialiased`}>
+      <head>
+        <meta name="theme-color" content="#da251d" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+      </head>
+      <body className="antialiased">
+        {/* Kích hoạt hệ thống thông báo OneSignal */}
+        <OneSignalInit /> 
+        
         {children}
       </body>
     </html>

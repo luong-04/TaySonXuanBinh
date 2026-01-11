@@ -11,7 +11,7 @@ interface Person {
 
 interface YearGroup { year: number; members: Person[]; }
 
-// --- COMPONENT MODAL (GIỮ NGUYÊN GIAO DIỆN CŨ) ---
+// --- COMPONENT MODAL (GIỮ NGUYÊN) ---
 const BioModal = ({ node, onClose }: { node: Person; onClose: () => void }) => {
     const getBeltColor = (level: number) => {
         if (level >= 20) return { badge: 'bg-white text-stone-900 border border-stone-300' };
@@ -32,32 +32,32 @@ const BioModal = ({ node, onClose }: { node: Person; onClose: () => void }) => {
                 className="bg-[#fdfbf7] w-full max-w-4xl h-[85vh] md:h-[80vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border-4 border-double border-red-900/20 relative animate-in zoom-in-95 duration-300"
                 onClick={e => e.stopPropagation()}
             >
-                <button onClick={onClose} className="absolute top-2 right-2 md:top-4 md:right-4 z-50 w-10 h-10 bg-stone-200 hover:bg-red-600 hover:text-white rounded-full flex items-center justify-center text-xl font-bold transition-colors">&times;</button>
+                <button onClick={onClose} className="absolute top-2 right-2 md:top-4 md:right-4 z-50 w-8 h-8 md:w-10 md:h-10 bg-stone-200 hover:bg-red-600 hover:text-white rounded-full flex items-center justify-center text-lg md:text-xl font-bold transition-colors">&times;</button>
 
-                <div className="shrink-0 bg-linear-to-b from-stone-100 to-white p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 border-b border-red-900/10">
-                    <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-stone-200 shadow-xl overflow-hidden shrink-0 bg-stone-300">
+                <div className="shrink-0 bg-linear-to-b from-stone-100 to-white p-4 md:p-8 flex flex-col md:flex-row items-center gap-4 md:gap-6 border-b border-red-900/10">
+                    <div className="w-24 h-24 md:w-40 md:h-40 rounded-full border-4 border-stone-200 shadow-xl overflow-hidden shrink-0 bg-stone-300">
                         <img src={node.avatar_url || "https://via.placeholder.com/150"} className="w-full h-full object-cover" />
                     </div>
-                    <div className="text-center md:text-left space-y-2">
-                        <h2 className="text-2xl md:text-4xl font-serif font-black text-red-900 uppercase drop-shadow-sm leading-tight">
+                    <div className="text-center md:text-left space-y-1 md:space-y-2">
+                        <h2 className="text-xl md:text-4xl font-serif font-black text-red-900 uppercase drop-shadow-sm leading-tight">
                             {node.full_name}
                         </h2>
-                        <div className={`inline-block px-4 py-1.5 rounded-lg font-bold uppercase text-xs md:text-sm tracking-widest shadow-sm ${isGrandMaster ? 'bg-yellow-500 text-red-900' : isMasterHead ? 'bg-red-900 text-yellow-500' : beltStyle.badge}`}>
+                        <div className={`inline-block px-3 py-1 md:px-4 md:py-1.5 rounded-lg font-bold uppercase text-[10px] md:text-sm tracking-widest shadow-sm ${isGrandMaster ? 'bg-yellow-500 text-red-900' : isMasterHead ? 'bg-red-900 text-yellow-500' : beltStyle.badge}`}>
                             {isGrandMaster ? 'Sư Tổ' : isMasterHead ? 'Trưởng Tràng' : `Đai ${node.belt_level} • ${node.title || 'Võ Sinh'}`}
                         </div>
                         {node.national_rank && (
-                            <p className="text-yellow-600 font-bold text-sm uppercase">★ {node.national_rank}</p>
+                            <p className="text-yellow-600 font-bold text-xs md:text-sm uppercase">★ {node.national_rank}</p>
                         )}
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-10 bg-white">
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-10 bg-white">
                     {node.bio ? (
-                        <div className="prose prose-stone max-w-none text-base md:text-lg leading-relaxed text-justify font-serif text-stone-800 whitespace-pre-wrap">
+                        <div className="prose prose-stone max-w-none text-sm md:text-lg leading-relaxed text-justify font-serif text-stone-800 whitespace-pre-wrap">
                             {node.bio}
                         </div>
                     ) : (
-                        <div className="h-full flex items-center justify-center text-stone-400 italic">
+                        <div className="h-full flex items-center justify-center text-stone-400 italic text-sm md:text-base">
                             Chưa có thông tin giới thiệu.
                         </div>
                     )}
@@ -67,7 +67,7 @@ const BioModal = ({ node, onClose }: { node: Person; onClose: () => void }) => {
     );
 }
 
-// --- CARD THÀNH VIÊN (GIỮ NGUYÊN GIAO DIỆN CŨ) ---
+// --- CARD THÀNH VIÊN (ĐÃ TỐI ƯU KÍCH THƯỚC) ---
 const MemberCard = ({ node, onSelect }: { node: Person; onSelect: (p: Person) => void }) => {
   const isGrandMaster = node.role === 'grandmaster';
   const isMasterHead = node.role === 'master_head';
@@ -89,17 +89,17 @@ const MemberCard = ({ node, onSelect }: { node: Person; onSelect: (p: Person) =>
   let infoBadgeClass = "";
 
   if (isGrandMaster) {
-    cardClasses = "bg-linear-to-br from-yellow-300 via-yellow-400 to-yellow-500 border-4 border-red-600 shadow-[0_0_30px_rgba(255,215,0,0.6)] scale-110 z-30";
-    avatarBorder = "border-red-700 ring-2 ring-yellow-200";
+    cardClasses = "bg-linear-to-br from-yellow-300 via-yellow-400 to-yellow-500 border-2 md:border-4 border-red-600 shadow-[0_0_15px_rgba(255,215,0,0.6)] scale-105 z-30";
+    avatarBorder = "border-red-700 ring-1 md:ring-2 ring-yellow-200";
     nameColor = "text-red-900 font-black";
     infoBadgeClass = "bg-red-900 text-yellow-300 border-red-950";
   } else if (isMasterHead) {
-    cardClasses = "bg-linear-to-br from-red-800 via-red-900 to-[#4a0404] border-2 border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.5)] scale-105 z-20";
+    cardClasses = "bg-linear-to-br from-red-800 via-red-900 to-[#4a0404] border border-yellow-400 shadow-[0_0_10px_rgba(234,179,8,0.5)] z-20";
     avatarBorder = "border-yellow-400";
     nameColor = "text-yellow-400 font-bold";
     infoBadgeClass = "bg-yellow-900/80 text-yellow-200 border-yellow-500/50";
   } else {
-    cardClasses = "bg-linear-to-b from-[#8B0000] to-[#5c0000] border-2 border-[#b22222] shadow-lg hover:shadow-yellow-500/30 hover:scale-105 hover:border-yellow-500 transition-all z-10";
+    cardClasses = "bg-linear-to-b from-[#8B0000] to-[#5c0000] border border-[#b22222] shadow-md hover:shadow-yellow-500/30 hover:border-yellow-500 transition-all z-10";
     avatarBorder = `${style.border} group-hover:border-yellow-500`;
     nameColor = `text-white ${style.nameHover}`;
     infoBadgeClass = style.bg;
@@ -107,45 +107,48 @@ const MemberCard = ({ node, onSelect }: { node: Person; onSelect: (p: Person) =>
 
   return (
     <div 
-        className={`relative flex flex-col items-center p-3 rounded-xl transition-all duration-300 w-36 md:w-48 shrink-0 group cursor-pointer ${cardClasses}`}
+        // CHỈNH SỬA Ở ĐÂY: w-28 (112px) cho mobile, w-36 cho tablet, w-48 cho desktop
+        className={`relative flex flex-col items-center p-2 md:p-3 rounded-lg md:rounded-xl transition-all duration-300 w-28 sm:w-36 md:w-48 shrink-0 group cursor-pointer ${cardClasses}`}
         onClick={() => onSelect(node)}
     >
         <div className="absolute inset-0 opacity-20 pointer-events-none overflow-hidden rounded-xl">
-             <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full border-4 border-white/10"></div>
-             <div className="absolute top-8 -left-8 w-20 h-20 rounded-full border-2 border-white/5"></div>
+             <div className="absolute -top-8 -right-8 w-16 h-16 md:w-24 md:h-24 rounded-full border-4 border-white/10"></div>
+             <div className="absolute top-8 -left-8 w-12 h-12 md:w-20 md:h-20 rounded-full border-2 border-white/5"></div>
         </div>
 
         <div className="relative z-10">
             {node.bio && (
-                <div className="absolute -top-2 -right-2 z-50 w-6 h-6 bg-yellow-400 text-red-900 rounded-full flex items-center justify-center text-[12px] font-black shadow border border-white animate-pulse">?</div>
+                <div className="absolute -top-1 -right-1 md:-top-2 md:-right-2 z-50 w-4 h-4 md:w-6 md:h-6 bg-yellow-400 text-red-900 rounded-full flex items-center justify-center text-[10px] md:text-[12px] font-black shadow border border-white animate-pulse">?</div>
             )}
 
-            <div className={`w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden border-4 shadow-inner ${avatarBorder} bg-stone-300`}>
+            {/* CHỈNH SỬA Ở ĐÂY: Giảm kích thước avatar mobile */}
+            <div className={`w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full overflow-hidden border-2 md:border-4 shadow-inner ${avatarBorder} bg-stone-300`}>
                 <img src={node.avatar_url || "https://via.placeholder.com/150"} className="w-full h-full object-cover"/>
             </div>
             {node.national_rank && (
-                 <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-[9px] px-2 py-0.5 rounded-full border border-white/20 font-bold uppercase whitespace-nowrap z-20 shadow-lg bg-stone-800 text-yellow-400">
+                 <div className="absolute -bottom-1.5 md:-bottom-2 left-1/2 -translate-x-1/2 text-[8px] md:text-[9px] px-1.5 py-0.5 rounded-full border border-white/20 font-bold uppercase whitespace-nowrap z-20 shadow-lg bg-stone-800 text-yellow-400">
                     ★ {node.national_rank}
                  </div>
             )}
         </div>
 
-        <div className="mt-4 text-center w-full z-10 space-y-1">
+        <div className="mt-2 md:mt-4 text-center w-full z-10 space-y-0.5 md:space-y-1">
             {(isGrandMaster || isMasterHead) && (
-                <div className={`text-[9px] md:text-[10px] font-black uppercase mb-1 tracking-widest ${isGrandMaster ? 'text-red-800' : 'text-yellow-500'}`}>
+                <div className={`text-[8px] md:text-[10px] font-black uppercase mb-0.5 tracking-widest ${isGrandMaster ? 'text-red-800' : 'text-yellow-500'}`}>
                     {isGrandMaster ? 'SƯ TỔ' : 'TRƯỞNG TRÀNG'}
                 </div>
             )}
-            <h3 className={`text-sm md:text-base font-serif leading-tight px-1 drop-shadow-md line-clamp-2 min-h-6 ${nameColor}`}>
+            {/* Tên nhỏ lại trên mobile */}
+            <h3 className={`text-xs sm:text-sm md:text-base font-serif leading-tight px-0.5 drop-shadow-md line-clamp-2 min-h-[2rem] md:min-h-6 flex items-center justify-center ${nameColor}`}>
                 {node.full_name}
             </h3>
             
-            <div className={`inline-flex items-center justify-center rounded-lg px-2 md:px-3 py-1 mt-1 backdrop-blur-md shadow-sm ${infoBadgeClass}`}>
-                <span className="text-[10px] md:text-[11px] font-bold whitespace-nowrap">
+            <div className={`inline-flex items-center justify-center rounded-md md:rounded-lg px-1.5 py-0.5 md:px-3 md:py-1 mt-1 backdrop-blur-md shadow-sm ${infoBadgeClass}`}>
+                <span className="text-[9px] md:text-[11px] font-bold whitespace-nowrap">
                     Đai {node.belt_level}
                 </span>
                 {node.title && (
-                    <span className="text-[10px] md:text-[11px] font-bold border-l border-current/40 pl-2 ml-2 opacity-90 whitespace-nowrap">
+                    <span className="hidden sm:inline text-[10px] md:text-[11px] font-bold border-l border-current/40 pl-2 ml-2 opacity-90 whitespace-nowrap">
                         {node.title}
                     </span>
                 )}
@@ -180,19 +183,16 @@ export default function GiaPhaTimeline() {
             groups[year].push(p);
         });
 
-        // --- LOGIC SẮP XẾP MỚI ---
         const sortedGroups = Object.keys(groups)
           .map(y => ({ 
             year: parseInt(y), 
             members: groups[parseInt(y)].sort((a, b) => {
-                // Sắp xếp theo join_date TĂNG DẦN (Cũ nhất lên đầu)
                 const dateA = new Date(a.join_date || '9999-12-31').getTime();
                 const dateB = new Date(b.join_date || '9999-12-31').getTime();
-                // Nếu cùng ngày thì sắp theo ID hoặc Tên (tùy chọn), ở đây giữ nguyên
                 return dateA - dateB;
             }) 
           }))
-          .sort((a, b) => a.year - b.year); // Sắp xếp năm tăng dần
+          .sort((a, b) => a.year - b.year);
 
         setTimelineData(sortedGroups);
         if(Object.keys(groups).length > 0) setActiveYear(parseInt(Object.keys(groups)[0]));
@@ -241,45 +241,46 @@ export default function GiaPhaTimeline() {
                 </div>
             </div>
 
-            <div className="absolute inset-0 overflow-y-auto scroll-smooth p-4 md:p-8 z-10 custom-scrollbar" id="timeline-container">
-                <div className="relative flex flex-col items-center space-y-12 md:space-y-16 pb-32 w-full pt-6 md:pt-10">
+            <div className="absolute inset-0 overflow-y-auto scroll-smooth p-2 md:p-8 z-10 custom-scrollbar" id="timeline-container">
+                <div className="relative flex flex-col items-center space-y-8 md:space-y-16 pb-32 w-full pt-6 md:pt-10">
                     
                     {/* Sư Tổ */}
                     {grandMasters.length > 0 && (
                         <div className="flex flex-col items-center animate-in fade-in zoom-in duration-700 relative z-10">
-                            <div className="flex gap-6 md:gap-10 justify-center flex-wrap px-2">{grandMasters.map(p => <MemberCard key={p.id} node={p} onSelect={setSelectedPerson} />)}</div>
-                            <div className="h-16 w-2 bg-linear-to-b from-yellow-300 to-yellow-600 mt-6 shadow-[0_0_15px_rgba(255,255,0,0.8)] rounded-full"></div>
+                            {/* Chỉnh gap nhỏ hơn */}
+                            <div className="flex gap-4 md:gap-10 justify-center flex-wrap px-1">{grandMasters.map(p => <MemberCard key={p.id} node={p} onSelect={setSelectedPerson} />)}</div>
+                            <div className="h-12 md:h-16 w-2 bg-linear-to-b from-yellow-300 to-yellow-600 mt-4 md:mt-6 shadow-[0_0_15px_rgba(255,255,0,0.8)] rounded-full"></div>
                         </div>
                     )}
 
                     {/* Trưởng Tràng */}
                     {masterHeads.length > 0 && (
                         <div className="flex flex-col items-center animate-in slide-in-from-bottom duration-700 delay-100 relative z-10">
-                            <div className="flex gap-6 md:gap-10 justify-center flex-wrap px-2">{masterHeads.map(p => <MemberCard key={p.id} node={p} onSelect={setSelectedPerson} />)}</div>
-                            <div className="h-20 w-1 border-l-4 border-dashed border-yellow-200/60 mt-6"></div>
+                            <div className="flex gap-4 md:gap-10 justify-center flex-wrap px-1">{masterHeads.map(p => <MemberCard key={p.id} node={p} onSelect={setSelectedPerson} />)}</div>
+                            <div className="h-16 md:h-20 w-1 border-l-4 border-dashed border-yellow-200/60 mt-4 md:mt-6"></div>
                         </div>
                     )}
 
                     {/* Danh sách theo năm */}
-                    <div className="w-full max-w-7xl space-y-16 md:space-y-20 relative z-10">
+                    <div className="w-full max-w-7xl space-y-12 md:space-y-20 relative z-10">
                         {timelineData.map((group) => (
                             <div key={group.year} id={`year-${group.year}`} className="relative flex flex-col items-center group w-full">
-                                <div className="flex items-center gap-3 md:gap-6 w-full mb-8 md:mb-12">
+                                <div className="flex items-center gap-2 md:gap-6 w-full mb-6 md:mb-12">
                                     <div className="h-1 bg-linear-to-tr from-transparent via-yellow-400 to-transparent flex-1 opacity-50"></div>
-                                    <div className="px-6 md:px-8 py-2 md:py-3 bg-[#b22222] text-yellow-300 rounded-2xl font-serif font-black text-lg md:text-xl shadow-2xl border-4 border-yellow-500 z-10 uppercase tracking-widest min-w-32 md:min-w-35 text-center relative">
+                                    <div className="px-4 md:px-8 py-2 md:py-3 bg-[#b22222] text-yellow-300 rounded-xl md:rounded-2xl font-serif font-black text-base md:text-xl shadow-2xl border-2 md:border-4 border-yellow-500 z-10 uppercase tracking-widest min-w-24 md:min-w-35 text-center relative">
                                         Năm {group.year}
-                                        <div className="absolute top-1/2 -left-3 w-4 h-4 bg-yellow-400 rounded-full -translate-y-1/2 shadow border border-red-800"></div>
-                                        <div className="absolute top-1/2 -right-3 w-4 h-4 bg-yellow-400 rounded-full -translate-y-1/2 shadow border border-red-800"></div>
+                                        <div className="absolute top-1/2 -left-2 md:-left-3 w-3 h-3 md:w-4 md:h-4 bg-yellow-400 rounded-full -translate-y-1/2 shadow border border-red-800"></div>
+                                        <div className="absolute top-1/2 -right-2 md:-right-3 w-3 h-3 md:w-4 md:h-4 bg-yellow-400 rounded-full -translate-y-1/2 shadow border border-red-800"></div>
                                     </div>
                                     <div className="h-1 bg-linear-to-tr from-transparent via-yellow-400 to-transparent flex-1 opacity-50"></div>
                                 </div>
-                                {/* GRID THÀNH VIÊN: DÙNG FLEX-WRAP ĐỂ TỰ XUỐNG DÒNG */}
-                                <div className="flex flex-wrap justify-center gap-4 md:gap-8 w-full px-2">
+                                {/* GRID: Giảm gap xuống gap-3 cho mobile */}
+                                <div className="flex flex-wrap justify-center gap-3 md:gap-8 w-full px-1">
                                     {group.members.map((person) => <MemberCard key={person.id} node={person} onSelect={setSelectedPerson} />)}
                                 </div>
                             </div>
                         ))}
-                        {timelineData.length === 0 && grandMasters.length === 0 && <div className="text-center text-yellow-100/50 italic font-serif text-xl md:text-2xl mt-20">Đang cập nhật dữ liệu...</div>}
+                        {timelineData.length === 0 && grandMasters.length === 0 && <div className="text-center text-yellow-100/50 italic font-serif text-lg md:text-2xl mt-20">Đang cập nhật dữ liệu...</div>}
                     </div>
                 </div>
             </div>
