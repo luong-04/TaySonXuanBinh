@@ -67,7 +67,7 @@ const BioModal = ({ node, onClose }: { node: Person; onClose: () => void }) => {
     );
 }
 
-// --- CARD THÀNH VIÊN (ĐÃ TỐI ƯU KÍCH THƯỚC) ---
+// --- CARD THÀNH VIÊN (GIỮ NGUYÊN) ---
 const MemberCard = ({ node, onSelect }: { node: Person; onSelect: (p: Person) => void }) => {
   const isGrandMaster = node.role === 'grandmaster';
   const isMasterHead = node.role === 'master_head';
@@ -107,7 +107,6 @@ const MemberCard = ({ node, onSelect }: { node: Person; onSelect: (p: Person) =>
 
   return (
     <div 
-        // CHỈNH SỬA Ở ĐÂY: w-28 (112px) cho mobile, w-36 cho tablet, w-48 cho desktop
         className={`relative flex flex-col items-center p-2 md:p-3 rounded-lg md:rounded-xl transition-all duration-300 w-28 sm:w-36 md:w-48 shrink-0 group cursor-pointer ${cardClasses}`}
         onClick={() => onSelect(node)}
     >
@@ -121,7 +120,6 @@ const MemberCard = ({ node, onSelect }: { node: Person; onSelect: (p: Person) =>
                 <div className="absolute -top-1 -right-1 md:-top-2 md:-right-2 z-50 w-4 h-4 md:w-6 md:h-6 bg-yellow-400 text-red-900 rounded-full flex items-center justify-center text-[10px] md:text-[12px] font-black shadow border border-white animate-pulse">?</div>
             )}
 
-            {/* CHỈNH SỬA Ở ĐÂY: Giảm kích thước avatar mobile */}
             <div className={`w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full overflow-hidden border-2 md:border-4 shadow-inner ${avatarBorder} bg-stone-300`}>
                 <img src={node.avatar_url || "https://via.placeholder.com/150"} className="w-full h-full object-cover"/>
             </div>
@@ -138,7 +136,6 @@ const MemberCard = ({ node, onSelect }: { node: Person; onSelect: (p: Person) =>
                     {isGrandMaster ? 'SƯ TỔ' : 'TRƯỞNG TRÀNG'}
                 </div>
             )}
-            {/* Tên nhỏ lại trên mobile */}
             <h3 className={`text-xs sm:text-sm md:text-base font-serif leading-tight px-0.5 drop-shadow-md line-clamp-2 min-h-[2rem] md:min-h-6 flex items-center justify-center ${nameColor}`}>
                 {node.full_name}
             </h3>
@@ -210,7 +207,10 @@ export default function GiaPhaTimeline() {
   if (loading) return <div className="h-full flex items-center justify-center font-serif text-red-900/50 italic animate-pulse">⏳ Đang tra cứu niên sử...</div>;
 
   return (
-    <div className="flex flex-col md:flex-row h-full w-full bg-[#da251d] overflow-hidden rounded-xl shadow-inner border-4 border-yellow-500/50 relative">
+    // SỬA LẦN CUỐI: TĂNG KHOẢNG TRỪ LÊN MỨC AN TOÀN TUYỆT ĐỐI
+    // - Mobile: Trừ 9.5rem
+    // - Desktop: Trừ 14rem (Trừ hẳn một khoảng lớn để header to cỡ nào cũng không bị đẩy scroll)
+    <div className="flex flex-col md:flex-row h-[calc(100dvh-9.5rem)] md:h-[calc(100dvh-14rem)] w-full bg-[#da251d] overflow-hidden rounded-xl shadow-inner border-4 border-yellow-500/50 relative mt-1 mx-auto max-w-[99%]">
         
         {/* --- CỘT MENU NĂM --- */}
         <div className="w-full md:w-24 bg-white/90 backdrop-blur border-b-4 md:border-b-0 md:border-r-4 border-yellow-500 flex flex-row md:flex-col py-2 md:py-6 z-30 shrink-0 shadow-2xl items-center md:items-stretch overflow-hidden">
@@ -228,7 +228,7 @@ export default function GiaPhaTimeline() {
             </div>
         </div>
 
-        {/* --- CỘT NỘI DUNG --- */}
+        {/* --- CỘT NỘI DUNG (SCROLL Ở ĐÂY) --- */}
         <div className="flex-1 relative h-full flex flex-col">
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
                 <div className="relative w-full h-full flex items-center justify-center pr-2 md:pr-4">
@@ -241,13 +241,13 @@ export default function GiaPhaTimeline() {
                 </div>
             </div>
 
+            {/* Khung chứa nội dung cuộn */}
             <div className="absolute inset-0 overflow-y-auto scroll-smooth p-2 md:p-8 z-10 custom-scrollbar" id="timeline-container">
                 <div className="relative flex flex-col items-center space-y-8 md:space-y-16 pb-32 w-full pt-6 md:pt-10">
                     
                     {/* Sư Tổ */}
                     {grandMasters.length > 0 && (
                         <div className="flex flex-col items-center animate-in fade-in zoom-in duration-700 relative z-10">
-                            {/* Chỉnh gap nhỏ hơn */}
                             <div className="flex gap-4 md:gap-10 justify-center flex-wrap px-1">{grandMasters.map(p => <MemberCard key={p.id} node={p} onSelect={setSelectedPerson} />)}</div>
                             <div className="h-12 md:h-16 w-2 bg-linear-to-b from-yellow-300 to-yellow-600 mt-4 md:mt-6 shadow-[0_0_15px_rgba(255,255,0,0.8)] rounded-full"></div>
                         </div>
@@ -274,7 +274,6 @@ export default function GiaPhaTimeline() {
                                     </div>
                                     <div className="h-1 bg-linear-to-tr from-transparent via-yellow-400 to-transparent flex-1 opacity-50"></div>
                                 </div>
-                                {/* GRID: Giảm gap xuống gap-3 cho mobile */}
                                 <div className="flex flex-wrap justify-center gap-3 md:gap-8 w-full px-1">
                                     {group.members.map((person) => <MemberCard key={person.id} node={person} onSelect={setSelectedPerson} />)}
                                 </div>

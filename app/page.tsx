@@ -112,13 +112,7 @@ export default function Home() {
              <TabButton 
                 id="tailieu" label="Tài Liệu" icon={BookOpen} 
                 isActive={activeTab === 'tailieu'} onClick={setActiveTab} 
-             />
-             
-             {/* Tab Thông Báo (Chỉ Admin thấy) */}
-             <TabButton 
-                id="thongbao" label="Phát Thông Báo" icon={Bell} show={isAdmin} 
-                isActive={activeTab === 'thongbao'} onClick={setActiveTab} 
-             />
+             /> 
         </div>
 
         <main className="flex-1 overflow-hidden relative bg-stone-50">
