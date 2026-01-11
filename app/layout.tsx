@@ -18,7 +18,8 @@ export default function RootLayout({
         <meta name="theme-color" content="#da251d" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
-      <body className="antialiased">
+      {/* THÊM class 'overflow-hidden' VÀO DÒNG DƯỚI ĐÂY */}
+      <body className="antialiased overflow-hidden h-screen w-screen bg-stone-50">
         {children}
       </body>
     </html>
