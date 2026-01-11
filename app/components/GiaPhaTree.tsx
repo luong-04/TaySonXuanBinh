@@ -11,6 +11,24 @@ interface Person {
 
 interface YearGroup { year: number; members: Person[]; }
 
+// --- HÀM XỬ LÝ NGÀY THÁNG AN TOÀN CHO SAFARI ---
+// Lấy năm (dùng để nhóm)
+const getSafeYear = (dateStr: string | null) => {
+    if (!dateStr) return 2024; // Mặc định nếu không có ngày
+    try {
+        // Thay khoảng trắng thành T để Safari hiểu
+        return new Date(dateStr.replace(' ', 'T')).getFullYear();
+    } catch { return 2024; }
+};
+
+// Lấy timestamp (dùng để sắp xếp)
+const getSafeTime = (dateStr: string | null) => {
+    if (!dateStr) return 0;
+    try {
+        return new Date(dateStr.replace(' ', 'T')).getTime();
+    } catch { return 0; }
+};
+
 // --- COMPONENT MODAL (GIỮ NGUYÊN) ---
 const BioModal = ({ node, onClose }: { node: Person; onClose: () => void }) => {
     const getBeltColor = (level: number) => {
@@ -73,11 +91,11 @@ const MemberCard = ({ node, onSelect }: { node: Person; onSelect: (p: Person) =>
   const isMasterHead = node.role === 'master_head';
 
   const getBeltStyle = (level: number) => {
-    if (level >= 19) return { border: 'border-white', bg: 'bg-white text-stone-900 border border-stone-300', nameHover: 'group-hover:text-white' };
-    if (level >= 15) return { border: 'border-yellow-400', bg: 'bg-yellow-500 text-red-900', nameHover: 'group-hover:text-yellow-300' };
-    if (level >= 11) return { border: 'border-red-600', bg: 'bg-red-700 text-white', nameHover: 'group-hover:text-red-300' };
-    if (level >= 7) return { border: 'border-green-600', bg: 'bg-green-700 text-white', nameHover: 'group-hover:text-green-300' };
-    if (level >= 3) return { border: 'border-blue-600', bg: 'bg-blue-700 text-white', nameHover: 'group-hover:text-blue-300' };
+    if (level >= 20) return { border: 'border-white', bg: 'bg-white text-stone-900 border border-stone-300', nameHover: 'group-hover:text-white' };
+    if (level >= 16) return { border: 'border-yellow-400', bg: 'bg-yellow-500 text-red-900', nameHover: 'group-hover:text-yellow-300' };
+    if (level >= 12) return { border: 'border-red-600', bg: 'bg-red-700 text-white', nameHover: 'group-hover:text-red-300' };
+    if (level >= 8) return { border: 'border-green-600', bg: 'bg-green-700 text-white', nameHover: 'group-hover:text-green-300' };
+    if (level >= 4) return { border: 'border-blue-600', bg: 'bg-blue-700 text-white', nameHover: 'group-hover:text-blue-300' };
     return { border: 'border-stone-600', bg: 'bg-stone-800 text-stone-300 border border-stone-600', nameHover: 'group-hover:text-stone-300' };
   };
 
@@ -175,7 +193,8 @@ export default function GiaPhaTimeline() {
         const groups: Record<number, Person[]> = {};
         
         others.forEach(p => {
-            const year = new Date(p.join_date || '2024-01-01').getFullYear();
+            // SỬA: Dùng getSafeYear để tránh lỗi Safari
+            const year = getSafeYear(p.join_date);
             if (!groups[year]) groups[year] = [];
             groups[year].push(p);
         });
@@ -184,8 +203,9 @@ export default function GiaPhaTimeline() {
           .map(y => ({ 
             year: parseInt(y), 
             members: groups[parseInt(y)].sort((a, b) => {
-                const dateA = new Date(a.join_date || '9999-12-31').getTime();
-                const dateB = new Date(b.join_date || '9999-12-31').getTime();
+                // SỬA: Dùng getSafeTime để sắp xếp đúng trên Safari
+                const dateA = getSafeTime(a.join_date);
+                const dateB = getSafeTime(b.join_date);
                 return dateA - dateB;
             }) 
           }))
@@ -207,10 +227,7 @@ export default function GiaPhaTimeline() {
   if (loading) return <div className="h-full flex items-center justify-center font-serif text-red-900/50 italic animate-pulse">⏳ Đang tra cứu niên sử...</div>;
 
   return (
-    // THAY ĐỔI QUAN TRỌNG:
-    // - flex flex-col md:flex-row -> Để chia sidebar niên đại và nội dung.
     <div className="flex flex-col md:flex-row h-full w-full bg-[#da251d] overflow-hidden rounded-xl shadow-inner border-4 border-yellow-500/50 relative">
-        
         {/* --- CỘT MENU NĂM --- */}
         <div className="w-full md:w-24 bg-white/90 backdrop-blur border-b-4 md:border-b-0 md:border-r-4 border-yellow-500 flex flex-row md:flex-col py-2 md:py-6 z-30 shrink-0 shadow-2xl items-center md:items-stretch overflow-hidden">
             <div className="hidden md:block text-[12px] font-black text-center text-red-800 uppercase mb-6 font-serif tracking-widest border-b border-red-100 pb-2">Niên Đại</div>
@@ -243,24 +260,18 @@ export default function GiaPhaTimeline() {
             {/* Khung chứa nội dung cuộn */}
             <div className="absolute inset-0 overflow-y-auto scroll-smooth p-2 md:p-8 z-10 custom-scrollbar" id="timeline-container">
                 <div className="relative flex flex-col items-center space-y-8 md:space-y-16 pb-32 w-full pt-6 md:pt-10">
-                    
-                    {/* Sư Tổ */}
                     {grandMasters.length > 0 && (
                         <div className="flex flex-col items-center animate-in fade-in zoom-in duration-700 relative z-10">
                             <div className="flex gap-4 md:gap-10 justify-center flex-wrap px-1">{grandMasters.map(p => <MemberCard key={p.id} node={p} onSelect={setSelectedPerson} />)}</div>
                             <div className="h-12 md:h-16 w-2 bg-linear-to-b from-yellow-300 to-yellow-600 mt-4 md:mt-6 shadow-[0_0_15px_rgba(255,255,0,0.8)] rounded-full"></div>
                         </div>
                     )}
-
-                    {/* Trưởng Tràng */}
                     {masterHeads.length > 0 && (
                         <div className="flex flex-col items-center animate-in slide-in-from-bottom duration-700 delay-100 relative z-10">
                             <div className="flex gap-4 md:gap-10 justify-center flex-wrap px-1">{masterHeads.map(p => <MemberCard key={p.id} node={p} onSelect={setSelectedPerson} />)}</div>
                             <div className="h-16 md:h-20 w-1 border-l-4 border-dashed border-yellow-200/60 mt-4 md:mt-6"></div>
                         </div>
                     )}
-
-                    {/* Danh sách theo năm */}
                     <div className="w-full max-w-7xl space-y-12 md:space-y-20 relative z-10">
                         {timelineData.map((group) => (
                             <div key={group.year} id={`year-${group.year}`} className="relative flex flex-col items-center group w-full">
@@ -283,7 +294,6 @@ export default function GiaPhaTimeline() {
                 </div>
             </div>
         </div>
-
         {selectedPerson && <BioModal node={selectedPerson} onClose={() => setSelectedPerson(null)} />}
     </div>
   );

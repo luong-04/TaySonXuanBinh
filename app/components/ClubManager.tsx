@@ -3,6 +3,21 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 // Import thư viện crop ảnh
 import Cropper from 'react-easy-crop';
+// --- HÀM FIX LỖI SAFARI & FORMAT NGÀY THÁNG VIỆT NAM (DD/MM/YYYY) ---
+const formatDateVN = (dateStr: string | null | undefined) => {
+  if (!dateStr) return '-';
+  // Lấy 10 ký tự đầu tiên (YYYY-MM-DD) bất kể có giờ phút hay không
+  const isoDate = String(dateStr).substring(0, 10);
+  
+  // Tách ra năm, tháng, ngày
+  const [year, month, day] = isoDate.split('-');
+  
+  // Kiểm tra dữ liệu rác
+  if (!year || !month || !day) return '-';
+  
+  // Ghép lại theo thứ tự người Việt: Ngày/Tháng/Năm
+  return `${day}/${month}/${year}`;
+};
 
 // --- INTERFACE ---
 interface Student {
@@ -628,7 +643,7 @@ export default function ClubManager({ userRole }: { userRole: string }) {
                                                         </td>
                                                         <td className="px-4 py-2 font-medium text-gray-900 whitespace-normal break-words leading-tight">{st.full_name}</td>
                                                         <td className="px-4 py-2 text-center"><span className="bg-gray-100 px-2 py-0.5 rounded font-mono font-bold text-xs">{st.belt_level}</span></td>
-                                                        <td className="px-4 py-2 text-gray-500 whitespace-nowrap text-xs">{st.dob ? new Date(st.dob).getFullYear() : '-'}</td>
+                                                        <td className="px-4 py-2 text-gray-500 whitespace-nowrap text-xs">{formatDateVN(st.dob)}</td>
                                                         <td className="px-4 py-2 text-right">
                                                             <div className="flex justify-end gap-1 opacity-100 md:opacity-60 group-hover:opacity-100 transition-opacity">
                                                                 {canManage && (
@@ -724,7 +739,7 @@ export default function ClubManager({ userRole }: { userRole: string }) {
                   </div>
                   <div className="space-y-3">
                       <input required placeholder="Họ và Tên" className="text-red-900 placeholder:text-red-700/50 w-full border p-2 rounded focus:border-red-800 outline-none font-medium" value={studentForm.full_name} onChange={e => setStudentForm({...studentForm, full_name: e.target.value})} />
-                      <div><label className="text-xs font-bold text-gray-500">Ngày sinh</label><input type="date" className="text-red-900 w-full border p-2 rounded cursor-pointer font-medium" value={studentForm.dob} onChange={e => setStudentForm({...studentForm, dob: e.target.value})} /></div>
+                      <div><label className="text-xs font-bold text-gray-500">Năm Sinh</label><input type="date" className="text-red-900 w-full border p-2 rounded cursor-pointer font-medium" value={studentForm.dob} onChange={e => setStudentForm({...studentForm, dob: e.target.value})} /></div>
                       <div>
                           <label className="text-xs font-bold text-gray-500">Cấp đai (0-22)</label>
                           <input type="number" min="0" max="22" disabled={!isAdmin} className={`text-red-900 font-medium w-full border p-2 rounded ${!isAdmin ? 'bg-gray-100 text-gray-400' : ''}`} value={studentForm.belt_level} onChange={e => setStudentForm({...studentForm, belt_level: e.target.value})} />

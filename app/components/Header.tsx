@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import Cropper from 'react-easy-crop';
-// Đã xóa Bell, Clock
 
 // --- ĐỊNH NGHĨA ---
 interface SiteSetting { key: string; value: string; }
@@ -29,7 +28,6 @@ async function getCroppedImg(imageSrc: string, pixelCrop: any): Promise<Blob | n
 }
 
 export default function Header() {
-  // --- STATE CŨ (GIỮ NGUYÊN CHO LOGO, TÊN, USER) ---
   const [info, setInfo] = useState({ name: 'Đang tải...', logo: '' });
   const [isAdmin, setIsAdmin] = useState(false);
   const [showNameEdit, setShowNameEdit] = useState(false);
@@ -49,8 +47,6 @@ export default function Header() {
   const [uploading, setUploading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // --- ĐÃ XÓA TOÀN BỘ LOGIC THÔNG BÁO ---
-
   useEffect(() => {
     fetchSettings();
     checkUser();
@@ -65,8 +61,16 @@ export default function Header() {
     }
   }, []);
 
-  // --- CÁC HÀM LOGIC CŨ (GIỮ NGUYÊN) ---
-  const fetchSettings = async () => { const { data: settingsData } = await supabase.from('site_settings').select('*'); if (settingsData) { const settings = settingsData as unknown as SiteSetting[]; const name = settings.find((k) => k.key === 'school_name')?.value; const logo = settings.find((k) => k.key === 'logo_url')?.value; setInfo({ name: name || 'Môn Phái Tây Sơn Xuân Bình', logo: logo || '' }); setEditName(name || 'Môn Phái Tây Sơn Xuân Bình'); } };
+  const fetchSettings = async () => { 
+      const { data: settingsData } = await supabase.from('site_settings').select('*'); 
+      if (settingsData) { 
+          const settings = settingsData as unknown as SiteSetting[]; 
+          const name = settings.find((k) => k.key === 'school_name')?.value; 
+          const logo = settings.find((k) => k.key === 'logo_url')?.value; 
+          setInfo({ name: name || 'Môn Phái Tây Sơn Xuân Bình', logo: logo || '' }); 
+          setEditName(name || 'Môn Phái Tây Sơn Xuân Bình'); 
+      } 
+  };
   
   const checkUser = async () => { 
       const { data: { user } } = await supabase.auth.getUser();
@@ -75,7 +79,17 @@ export default function Header() {
         if (data) {
           if (data.role === 'admin' || data.role === 'master_head') setIsAdmin(true);
           setCurrentUser(data);
-          setUserForm({ id: data.id, full_name: data.full_name || '', avatar_url: data.avatar_url || '', bio: data.bio || '', dob: data.dob || '' });
+          
+          // FIX SAFARI: Cắt chuỗi ngày tháng chỉ lấy YYYY-MM-DD để input date hiểu
+          const safeDob = data.dob ? String(data.dob).substring(0, 10) : '';
+
+          setUserForm({ 
+              id: data.id, 
+              full_name: data.full_name || '', 
+              avatar_url: data.avatar_url || '', 
+              bio: data.bio || '', 
+              dob: safeDob
+          });
         }
       }
   };
@@ -89,7 +103,7 @@ export default function Header() {
   const handleSaveUserProfile = async (e: React.FormEvent) => { e.preventDefault(); setUploading(true); try { let avatarUrl = userForm.avatar_url; if (userAvatarFile) { const fileName = `avatar-${currentUser.id}-${Date.now()}`; const { error } = await supabase.storage.from('assets').upload(fileName, userAvatarFile); if (error) throw error; const { data } = supabase.storage.from('assets').getPublicUrl(fileName); avatarUrl = data.publicUrl; } const res = await fetch('/api/profile/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...userForm, avatar_url: avatarUrl }), }); const result = await res.json(); if (!result.success) throw new Error(result.error); alert('Cập nhật hồ sơ thành công!'); window.location.reload(); } catch (error: any) { alert('Lỗi: ' + error.message); } finally { setUploading(false); } };
 
   return (
-    <header className="bg-red-900 text-yellow-50 shadow-md border-b-4 border-yellow-600 py-2 px-3 md:py-3 md:px-6 flex justify-between items-center relative z-50 min-h-16">
+    <header className="shrink-0 bg-red-900 text-yellow-50 shadow-md border-b-4 border-yellow-600 py-2 px-3 md:py-3 md:px-6 flex justify-between items-center relative z-50 min-h-16">
       {/* 1. LOGO & TÊN */}
       <div className="flex items-center gap-2 md:gap-4 flex-1">
         <div 
@@ -103,11 +117,8 @@ export default function Header() {
 
         <div className="flex-1">
             <div className="flex items-start gap-1">
-                {/* SỬA LỖI HIỂN THỊ TÊN:
-                   - break-words: Nếu hết chỗ thì xuống dòng nguyên cả từ (không cắt B-ình).
-                   - leading-tight: Khoảng cách dòng khít lại cho đẹp.
-                */}
-                <h1 className="text-sm md:text-3xl font-serif font-bold text-yellow-50 drop-shadow-sm leading-tight break-words">
+                {/* FIX LỖI TÊN BỊ CẮT: Dùng break-words thay vì break-all */}
+                <h1 className="text-sm md:text-3xl font-serif font-bold text-yellow-50 drop-shadow-sm uppercase break-words leading-tight">
                     {info.name}
                 </h1>
                 {isAdmin && (
@@ -116,13 +127,13 @@ export default function Header() {
                     </button>
                 )}
             </div>
-            <p className="text-[10px] md:text-xs text-yellow-200 font-serif uppercase italic mt-0.5 md:mt-1 opacity-80 hidden sm:block">
+            <p className="text-[10px] md:text-xs text-yellow-200 font-serif uppercase italic mt-0.5 md:mt-1 opacity-80 break-words hidden sm:block">
                 {"Phụng sự tổ quốc - Phát huy tinh hoa"}
             </p>
         </div>
       </div>
 
-      {/* 2. CHỈ CÒN PHẦN USER (ĐÃ XÓA CHUÔNG) */}
+      {/* 2. CHỈ CÒN PHẦN USER (KHÔNG CÓ CHUÔNG) */}
       <div className="shrink-0 ml-2 flex items-center gap-2 md:gap-4">
         {currentUser ? (
           <div className="flex items-center gap-2 md:gap-4 relative" ref={dropdownRef}>
@@ -154,7 +165,7 @@ export default function Header() {
         )}
       </div>
       
-      {/* ... (GIỮ NGUYÊN CÁC MODAL) ... */}
+      {/* ... CÁC MODAL ... */}
       {showNameEdit && ( <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-100 p-4 backdrop-blur-sm"> <div className="bg-white p-6 rounded-lg w-full max-w-md border-4 border-yellow-600 relative shadow-2xl animate-in zoom-in duration-200"> <button onClick={() => setShowNameEdit(false)} className="absolute top-2 right-4 text-gray-400 hover:text-red-500 font-bold text-xl">&times;</button> <h3 className="font-serif font-bold text-xl mb-4 text-red-900 uppercase text-center">Đổi Tên Môn Phái</h3> <div className="space-y-4"> <div> <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Tên Mới</label> <input value={editName} onChange={e => setEditName(e.target.value)} className="w-full border-2 border-red-900/20 p-3 rounded focus:border-red-900 outline-none font-serif text-lg text-red-900"/> </div> <button onClick={handleUpdateName} disabled={uploading} className="w-full bg-red-900 text-white font-bold py-3 rounded hover:bg-red-800 shadow mt-2"> {uploading ? 'Đang lưu...' : 'Lưu Thay Đổi'} </button> </div> </div> </div> )}
       {showCropModal && ( <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-110 p-4 backdrop-blur-md"> <div className="bg-white rounded-xl w-full max-w-lg p-6 shadow-2xl animate-in zoom-in duration-300 flex flex-col h-125"> <h3 className="font-serif font-bold text-red-900 text-xl mb-4 text-center uppercase">Căn Chỉnh Logo</h3> <div className="relative flex-1 bg-stone-900 rounded-lg overflow-hidden border-2 border-stone-200"> <Cropper image={imageSrc || ''} crop={crop} zoom={zoom} aspect={1} onCropChange={setCrop} onCropComplete={onCropComplete} onZoomChange={setZoom} objectFit="contain" /> </div> <div className="mt-4 px-2"><input type="range" value={zoom} min={1} max={3} step={0.1} onChange={(e) => setZoom(Number(e.target.value))} className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2" /></div> <div className="flex justify-between gap-3 mt-6"> <button onClick={() => { setShowCropModal(false); setImageSrc(null); }} className="px-5 py-2 text-stone-500 font-bold hover:bg-stone-100 rounded-xl">Hủy</button> <button onClick={handleCropSave} disabled={uploading} className="px-6 py-2 bg-red-900 text-yellow-50 rounded-xl font-bold hover:bg-red-800 shadow">{uploading ? 'Đang Lưu...' : 'Xong & Cập Nhật'}</button> </div> </div> </div> )}
       {showUserModal && ( <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-110 p-4 backdrop-blur-sm"> <div className="bg-[#fdfbf7] rounded-2xl shadow-2xl w-full max-w-md p-6 border-4 border-double border-red-900/20 animate-in zoom-in duration-200 max-h-[90vh] overflow-y-auto custom-scrollbar"> <div className="flex justify-between items-center mb-4 border-b border-red-900/10 pb-2"> <h3 className="text-xl font-serif font-bold text-red-900 uppercase">Hồ Sơ Cá Nhân</h3> <button onClick={() => setShowUserModal(false)} className="text-stone-400 hover:text-red-900 text-2xl font-bold">&times;</button> </div> <form onSubmit={handleSaveUserProfile} className="space-y-4"> <div className="flex flex-col items-center gap-2"> <div className="relative w-24 h-24 rounded-full border-2 border-red-900 overflow-hidden group shadow-md bg-white"> <img src={userAvatarPreview || userForm.avatar_url || '/default-avatar.png'} className="w-full h-full object-cover" /> <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"> <span className="text-[10px] text-white font-bold uppercase">Đổi ảnh</span> <input type="file" className="hidden" accept="image/*" onChange={handleUserAvatarChange} /> </label> </div> </div> <div> <label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Họ và Tên</label> <input required className="text-red-900 font-bold w-full border border-stone-200 p-2 rounded-lg bg-white outline-none focus:border-red-800" value={userForm.full_name} onChange={e => setUserForm({...userForm, full_name: e.target.value})} /> </div> <div> <label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Ngày Sinh (Dương Lịch)</label> <input type="date" className="text-red-900 font-medium w-full border border-stone-200 p-2 rounded-lg bg-white outline-none focus:border-red-800 cursor-pointer" value={userForm.dob || ''} onChange={e => setUserForm({...userForm, dob: e.target.value})} /> </div> <div> <label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Giới thiệu (Bio)</label> <textarea rows={4} className="text-stone-700 w-full border border-stone-200 p-2 rounded-lg bg-white outline-none focus:border-red-800 text-sm resize-none" placeholder="Tiểu sử, thành tích, quá trình tập luyện..." value={userForm.bio} onChange={e => setUserForm({...userForm, bio: e.target.value})} /> </div> <div className="flex justify-end gap-3 pt-4 border-t border-red-900/10"> <button type="button" onClick={() => setShowUserModal(false)} className="px-4 py-2 text-stone-500 font-bold hover:bg-stone-100 rounded-lg text-sm">Hủy</button> <button type="submit" disabled={uploading} className="px-6 py-2 bg-red-900 text-white rounded-lg font-bold shadow-md hover:bg-red-800 text-sm"> {uploading ? 'Đang lưu...' : 'Lưu Hồ Sơ'} </button> </div> </form> </div> </div> )}

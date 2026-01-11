@@ -9,7 +9,6 @@ import GiaPhaTree from './components/GiaPhaTree';
 import CoachManager from './components/CoachManager';
 import ClubManager from './components/ClubManager';
 import DocumentManager from './components/DocumentManager';
-import NotificationSender from './components/NotificationSender';
 
 // --- COMPONENT NÚT TAB (GIỮ NGUYÊN) ---
 const TabButton = ({ id, label, icon: Icon, show = true, isActive, onClick }: any) => {
@@ -141,12 +140,6 @@ export default function Home() {
                 {activeTab === 'tailieu' && (
                     <div className="container mx-auto animate-in fade-in duration-300">
                         <DocumentManager userRole={userRole} />
-                    </div>
-                )}
-
-                {activeTab === 'thongbao' && isAdmin && (
-                    <div className="container mx-auto max-w-4xl animate-in fade-in duration-300 pt-4 md:pt-8">
-                         <NotificationSender />
                     </div>
                 )}
             </div>
