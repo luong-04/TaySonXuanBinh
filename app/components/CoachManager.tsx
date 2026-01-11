@@ -66,9 +66,11 @@ export default function CoachManager({ userRole }: { userRole: string }) {
   useEffect(() => { fetchData(); }, []);
 
   const suggestTitle = (level: number) => {
-    if (level >= 18) return "Võ Sư"; if (level >= 16) return "Chuẩn Võ Sư";
-    if (level >= 15) return "Trợ Giáo Cao Cấp"; if (level >= 12) return "Huấn Luyện Viên";
-    if (level >= 10) return "Hướng Dẫn Viên"; return "";
+    if (level >= 18) return "Võ Sư"; 
+    if (level >= 16) return "Chuẩn Võ Sư";
+    if (level >= 15) return "Trợ Giáo Cao Cấp"; 
+    if (level >= 11) return "Huấn Luyện Viên"; 
+    return "";
   };
 
   const handleBeltChange = (val: string) => {
@@ -279,22 +281,39 @@ export default function CoachManager({ userRole }: { userRole: string }) {
                       <div><label className="block text-xs font-bold text-stone-500 mb-1 uppercase">{isEditing ? 'Mật khẩu mới' : 'Mật khẩu (*)'}</label><input type="text" className=" text-red-900 placeholder:text-red-700/50 w-full border border-stone-200 p-3 rounded-xl focus:border-red-800 outline-none bg-white shadow-sm" placeholder={isEditing ? "Để trống nếu không đổi" : "******"} value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} /></div>
                       <div><label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Ngày sinh</label><input type="date" className="text-red-900 w-full border border-stone-200 p-3 rounded-xl focus:border-red-800 outline-none bg-white shadow-sm cursor-pointer" value={formData.dob} onChange={e => setFormData({...formData, dob: e.target.value})} /></div>
                   </div>
-                  {/* ... (Phần Form khác giữ nguyên cấu trúc grid-cols-1 sm:grid-cols-2 để responsive) ... */}
-                  {/* Code đã tối ưu responsive ở trên rồi nên phần này tự động đẹp */}
+                  
+                  {/* CỤM ĐỔI MÀU LABEL THÀNH MÀU ĐỎ NHƯ YÊU CẦU */}
                   <div className="bg-red-50/50 p-4 rounded-xl border border-red-100 space-y-4">
-                      <div><label className="block text-xs font-bold text-red-800 mb-1 uppercase">Sư Phụ</label><select className="w-full border border-red-100 p-2 rounded-lg focus:border-red-800 outline-none bg-white" value={formData.master_id} onChange={e => setFormData({...formData, master_id: e.target.value})}><option value="">-- Chọn Sư Phụ --</option>{coaches.filter(c => c.id !== editId).map(c => (<option key={c.id} value={c.id}>{c.full_name} (Đai {c.belt_level})</option>))}</select></div>
+                      <div>
+                          {/* Sư phụ -> Màu đỏ */}
+                          <label className="block text-xs font-bold text-red-900 mb-1 uppercase">Sư Phụ</label>
+                          <select className="w-full border border-red-100 p-2 rounded-lg focus:border-red-800 outline-none bg-white text-red-900 font-medium" value={formData.master_id} onChange={e => setFormData({...formData, master_id: e.target.value})}><option value="">-- Chọn Sư Phụ --</option>{coaches.filter(c => c.id !== editId).map(c => (<option key={c.id} value={c.id}>{c.full_name} (Đai {c.belt_level})</option>))}</select>
+                      </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div><label className="block text-xs font-bold text-red-800 mb-1 uppercase">Đơn vị quản lý</label><select className="w-full border border-red-100 p-2 rounded-lg focus:border-red-800 outline-none bg-white" value={formData.club_id} onChange={e => setFormData({...formData, club_id: e.target.value})}><option value="">-- Chọn CLB --</option>{clubs.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
-                          <div><label className="block text-xs font-bold text-red-800 mb-1 uppercase">Chức vụ CLB</label><select className="w-full border border-red-100 p-2 rounded-lg focus:border-red-800 outline-none bg-white" value={formData.club_role} onChange={e => setFormData({...formData, club_role: e.target.value})}><option value="">-- Chọn chức vụ --</option><option value="Trưởng tràng">Trưởng tràng</option><option value="HLV Trưởng">HLV Trưởng</option><option value="HLV Phó">HLV Phó</option><option value="HLV Trợ giảng">HLV Trợ giảng</option><option value="Thành viên BHL">Thành viên BHL</option></select></div>
+                          <div>
+                              {/* Đơn vị quản lý -> Màu đỏ */}
+                              <label className="block text-xs font-bold text-red-900 mb-1 uppercase">Đơn vị quản lý</label>
+                              <select className="w-full border border-red-100 p-2 rounded-lg focus:border-red-800 outline-none bg-white text-red-900 font-medium" value={formData.club_id} onChange={e => setFormData({...formData, club_id: e.target.value})}><option value="">-- Chọn CLB --</option>{clubs.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+                          </div>
+                          <div>
+                              {/* Chức vụ CLB -> Màu đỏ */}
+                              <label className="block text-xs font-bold text-red-900 mb-1 uppercase">Chức vụ CLB</label>
+                              <select className="w-full border border-red-100 p-2 rounded-lg focus:border-red-800 outline-none bg-white text-red-900 font-medium" value={formData.club_role} onChange={e => setFormData({...formData, club_role: e.target.value})}><option value="">-- Chọn chức vụ --</option><option value="Trưởng tràng">Trưởng tràng</option><option value="HLV Trưởng">HLV Trưởng</option><option value="HLV Phó">HLV Phó</option><option value="HLV Trợ giảng">HLV Trợ giảng</option><option value="Thành viên BHL">Thành viên BHL</option></select>
+                          </div>
                       </div>
                   </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div><label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Cấp đai</label><input type="number" max="22" className="text-red-900 w-full border border-stone-200 p-3 rounded-xl focus:border-red-800 outline-none bg-white shadow-sm text-center font-bold" value={formData.belt_level} onChange={e => handleBeltChange(e.target.value)} /></div>
                       <div className="sm:col-span-2"><label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Danh hiệu</label><input type="text" className="text-red-900 placeholder:text-red-700/50 w-full border border-stone-200 p-3 rounded-xl focus:border-red-800 outline-none bg-white shadow-sm font-bold text-red-800" placeholder="Tự động..." value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} /></div>
                       <div className="sm:col-span-3"><label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Đẳng Quốc Gia</label><input type="text" placeholder="VD: 3 Đẳng" className="text-red-900 placeholder:text-red-700/50 w-full border border-stone-200 p-3 rounded-xl focus:border-red-800 outline-none bg-white shadow-sm" value={formData.national_rank} onChange={e => setFormData({...formData, national_rank: e.target.value})} /></div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div><label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Quyền quản trị</label><select className="w-full border border-stone-200 p-3 rounded-xl focus:border-red-800 outline-none bg-white shadow-sm" value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})}><option value="instructor">Giảng viên (Thường)</option><option value="master_head">Trưởng Tràng (Cao cấp)</option><option value="grandmaster">Sư Tổ</option><option value="admin">Admin Kỹ thuật</option></select></div>
+                      <div>
+                          {/* Quyền quản trị -> Màu đỏ */}
+                          <label className="block text-xs font-bold text-red-900 mb-1 uppercase">Quyền quản trị</label>
+                          <select className="w-full border border-stone-200 p-3 rounded-xl focus:border-red-800 outline-none bg-white shadow-sm text-red-900 font-medium" value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})}><option value="instructor">Giảng viên (Thường)</option><option value="master_head">Trưởng Tràng (Cao cấp)</option><option value="grandmaster">Sư Tổ</option><option value="admin">Admin Kỹ thuật</option></select>
+                      </div>
                       <div><label className="block text-xs font-bold text-stone-500 mb-1 uppercase">Ngày nhập môn</label><input type="date" className="text-red-900 w-full border border-stone-200 p-3 rounded-xl focus:border-red-800 outline-none bg-white shadow-sm cursor-pointer" value={formData.join_date} onChange={e => setFormData({...formData, join_date: e.target.value})} /></div>
                   </div>
               </div>

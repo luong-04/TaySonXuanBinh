@@ -74,6 +74,9 @@ export default function Home() {
 
   const isAdmin = userRole === 'admin' || userRole === 'master_head';
 
+  // Biến kiểm tra tab nào cần full màn hình (không cuộn ở body)
+  const isFullHeightTab = activeTab === 'giapha' || activeTab === 'clb';
+
   return (
     <div className="flex h-[100dvh] w-screen overflow-hidden bg-stone-100 font-sans">
       
@@ -114,11 +117,11 @@ export default function Home() {
 
         {/* NỘI DUNG CHÍNH (MAIN) */}
         <main className="flex-1 overflow-hidden relative bg-stone-50">
-            {/* LOGIC QUAN TRỌNG:
-               - Nếu là 'giapha': Class là 'h-full w-full overflow-hidden' -> Để GiaPhaTree tự chia cột và cuộn bên trong.
-               - Nếu là tab khác: Class có 'overflow-y-auto p-6' -> Để nội dung văn bản cuộn bình thường.
+            {/* FIX GIAO DIỆN TRẮNG TRÊN MOBILE:
+               - Nếu là 'giapha' hoặc 'clb': Dùng 'h-full w-full overflow-hidden' để component con tự quản lý scroll (GiaPhaTree và ClubManager đều đã có scroll riêng).
+               - Các tab còn lại: Dùng 'overflow-y-auto' để cuộn nội dung text dài.
             */}
-            <div className={`h-full w-full ${activeTab === 'giapha' ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar p-2 md:p-6 pb-20 md:pb-6'}`}>
+            <div className={`h-full w-full ${isFullHeightTab ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar p-2 md:p-6 pb-20 md:pb-6'}`}>
                 
                 {activeTab === 'giapha' && <GiaPhaTree />}
                 
@@ -129,7 +132,8 @@ export default function Home() {
                 )}
                 
                 {activeTab === 'clb' && (
-                    <div className="container mx-auto animate-in fade-in duration-300">
+                    /* SỬA QUAN TRỌNG: Không dùng container, để full width/height cho ClubManager tự xử lý mobile */
+                    <div className="h-full w-full animate-in fade-in duration-300">
                         <ClubManager userRole={userRole} />
                     </div>
                 )}
