@@ -13,11 +13,11 @@ export async function POST(req: Request) {
         'Authorization': `os_v2_app_knb3wgsiwnbhvjgnnnyibrkrsgqcdbtznhhee6v2gzlrd3x6q7v5vdxinh7frdex5nbkybxyd2su7ncijrmui3dqda3wf3ybyie5hei`, 
       },
       body: JSON.stringify({
-        app_id: "YOUR_ONESIGNAL_APP_ID", // App ID của bạn
+        app_id: "5343bb1a-48b3-427a-a4cd-6b7080c55191", // App ID của bạn
         included_segments: ["Total Subscriptions"], // Gửi cho tất cả mọi người đã đăng ký
         headings: { en: heading || "Thông báo môn phái" },
         contents: { en: message },
-        url: "https://taysonxuanbinh.com/notifications" // Bấm vào tin thì mở trang này
+        url: "https://tay-son-xuan-binh.vercel.app/" // Bấm vào tin thì mở trang này
       }),
     });
 
