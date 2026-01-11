@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import Header from './components/Header';
 import { supabase } from './lib/supabase';
 // Import các Icon
-import { Network, Users, Shield, BookOpen, Bell } from 'lucide-react';
+import { Network, Users, Shield, BookOpen } from 'lucide-react';
 
 import GiaPhaTree from './components/GiaPhaTree';
 import CoachManager from './components/CoachManager';
@@ -11,12 +11,12 @@ import ClubManager from './components/ClubManager';
 import DocumentManager from './components/DocumentManager';
 import NotificationSender from './components/NotificationSender';
 
-// --- ĐƯA COMPONENT NÚT RA NGOÀI ĐỂ TRÁNH LỖI RENDER LẠI ---
+// --- COMPONENT NÚT TAB (GIỮ NGUYÊN) ---
 const TabButton = ({ id, label, icon: Icon, show = true, isActive, onClick }: any) => {
     if (!show) return null;
     return (
       <button
-          id={`tab-btn-${id}`} // Thêm ID để code tự tìm và cuộn tới
+          id={`tab-btn-${id}`}
           type="button"
           onClick={(e) => {
               e.preventDefault();
@@ -33,14 +33,12 @@ const TabButton = ({ id, label, icon: Icon, show = true, isActive, onClick }: an
       </button>
     );
 };
-// -----------------------------------------------------------
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('giapha');
   const [userRole, setUserRole] = useState('guest');
-  const [loading, setLoading] = useState(true);
   
-  // Ref để điều khiển thanh cuộn
+  // Ref để điều khiển thanh cuộn tab
   const tabsContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,23 +56,21 @@ export default function Home() {
             setUserRole(p.role);
         }
       }
-      setLoading(false);
     };
     checkUser();
   }, []);
 
-  // --- HIỆU ỨNG TỰ ĐỘNG CUỘN TAB RA GIỮA ---
+  // --- HIỆU ỨNG CUỘN TAB (GIỮ NGUYÊN) ---
   useEffect(() => {
       const activeBtn = document.getElementById(`tab-btn-${activeTab}`);
       if (activeBtn && tabsContainerRef.current) {
           activeBtn.scrollIntoView({ 
               behavior: 'smooth', 
               block: 'nearest', 
-              inline: 'center' // Quan trọng: Căn giữa tab theo chiều ngang
+              inline: 'center'
           });
       }
   }, [activeTab]);
-  // ------------------------------------------
 
   const isAdmin = userRole === 'admin' || userRole === 'master_head';
 
@@ -90,6 +86,7 @@ export default function Home() {
 
       {/* 2. KHÔNG GIAN LÀM VIỆC CHÍNH */}
       <div className="flex-1 flex flex-col min-w-0 h-full">
+        {/* Header luôn hiển thị ở trên cùng */}
         <Header />
         
         {/* THANH TAB MENU */}
@@ -115,43 +112,40 @@ export default function Home() {
              /> 
         </div>
 
+        {/* NỘI DUNG CHÍNH (MAIN) */}
         <main className="flex-1 overflow-hidden relative bg-stone-50">
-          <div className="h-full w-full overflow-y-auto custom-scrollbar p-2 md:p-6 pb-20 md:pb-6">
-            
-            {activeTab === 'giapha' && (
-                <div className="h-full animate-in fade-in duration-300">
-                    <GiaPhaTree />
-                </div>
-            )}
-            
-            {activeTab === 'hlv' && (
-                <div className="container mx-auto animate-in fade-in duration-300">
-                    <CoachManager userRole={userRole} />
-                </div>
-            )}
-            
-            {activeTab === 'clb' && (
-                <div className="container mx-auto animate-in fade-in duration-300">
-                    <ClubManager userRole={userRole} />
-                </div>
-            )}
-            
-            {activeTab === 'tailieu' && (
-                <div className="container mx-auto animate-in fade-in duration-300">
-                    <DocumentManager userRole={userRole} />
-                </div>
-            )}
+            {/* LOGIC QUAN TRỌNG:
+               - Nếu là 'giapha': Class là 'h-full w-full overflow-hidden' -> Để GiaPhaTree tự chia cột và cuộn bên trong.
+               - Nếu là tab khác: Class có 'overflow-y-auto p-6' -> Để nội dung văn bản cuộn bình thường.
+            */}
+            <div className={`h-full w-full ${activeTab === 'giapha' ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar p-2 md:p-6 pb-20 md:pb-6'}`}>
+                
+                {activeTab === 'giapha' && <GiaPhaTree />}
+                
+                {activeTab === 'hlv' && (
+                    <div className="container mx-auto animate-in fade-in duration-300">
+                        <CoachManager userRole={userRole} />
+                    </div>
+                )}
+                
+                {activeTab === 'clb' && (
+                    <div className="container mx-auto animate-in fade-in duration-300">
+                        <ClubManager userRole={userRole} />
+                    </div>
+                )}
+                
+                {activeTab === 'tailieu' && (
+                    <div className="container mx-auto animate-in fade-in duration-300">
+                        <DocumentManager userRole={userRole} />
+                    </div>
+                )}
 
-            {activeTab === 'thongbao' && isAdmin && (
-                <div className="container mx-auto max-w-4xl animate-in fade-in duration-300 pt-4 md:pt-8">
-                     <NotificationSender />
-                     <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-yellow-800 text-sm">
-                        <strong>💡 Mẹo:</strong> Thông báo sẽ hiển thị ngay lập tức (số đỏ trên chuông & icon app) trên thiết bị của mọi người.
-                     </div>
-                </div>
-            )}
-
-          </div>
+                {activeTab === 'thongbao' && isAdmin && (
+                    <div className="container mx-auto max-w-4xl animate-in fade-in duration-300 pt-4 md:pt-8">
+                         <NotificationSender />
+                    </div>
+                )}
+            </div>
         </main>
       </div>
 
