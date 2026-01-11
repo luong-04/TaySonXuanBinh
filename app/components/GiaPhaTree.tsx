@@ -207,10 +207,11 @@ export default function GiaPhaTimeline() {
   if (loading) return <div className="h-full flex items-center justify-center font-serif text-red-900/50 italic animate-pulse">⏳ Đang tra cứu niên sử...</div>;
 
   return (
-    // SỬA LẦN CUỐI: TĂNG KHOẢNG TRỪ LÊN MỨC AN TOÀN TUYỆT ĐỐI
-    // - Mobile: Trừ 9.5rem
-    // - Desktop: Trừ 14rem (Trừ hẳn một khoảng lớn để header to cỡ nào cũng không bị đẩy scroll)
-    <div className="flex flex-col md:flex-row h-[calc(100dvh-9.5rem)] md:h-[calc(100dvh-14rem)] w-full bg-[#da251d] overflow-hidden rounded-xl shadow-inner border-4 border-yellow-500/50 relative mt-1 mx-auto max-w-[99%]">
+    // SỬA LẦN CUỐI CÙNG: "CẮT GỌT" MẠNH TAY ĐỂ KHÔNG CÒN CROLL
+    // - box-border: Đảm bảo viền 4px không làm phình kích thước
+    // - Mobile: Trừ 11.5rem (dư dả cho Header + khoảng cách)
+    // - Desktop: Trừ 16rem (trừ mạnh để chắc chắn nằm gọn trong màn hình laptop)
+    <div className="flex flex-col md:flex-row h-[calc(100dvh-11.5rem)] md:h-[calc(100dvh-16rem)] w-full bg-[#da251d] overflow-hidden rounded-xl shadow-inner border-4 border-yellow-500/50 relative mt-1 mx-auto max-w-[99%] box-border">
         
         {/* --- CỘT MENU NĂM --- */}
         <div className="w-full md:w-24 bg-white/90 backdrop-blur border-b-4 md:border-b-0 md:border-r-4 border-yellow-500 flex flex-row md:flex-col py-2 md:py-6 z-30 shrink-0 shadow-2xl items-center md:items-stretch overflow-hidden">
@@ -228,7 +229,7 @@ export default function GiaPhaTimeline() {
             </div>
         </div>
 
-        {/* --- CỘT NỘI DUNG (SCROLL Ở ĐÂY) --- */}
+        {/* --- CỘT NỘI DUNG (CHỈ CROLL Ở TRONG NÀY) --- */}
         <div className="flex-1 relative h-full flex flex-col">
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
                 <div className="relative w-full h-full flex items-center justify-center pr-2 md:pr-4">
