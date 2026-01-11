@@ -73,11 +73,11 @@ const MemberCard = ({ node, onSelect }: { node: Person; onSelect: (p: Person) =>
   const isMasterHead = node.role === 'master_head';
 
   const getBeltStyle = (level: number) => {
-    if (level >= 20) return { border: 'border-white', bg: 'bg-white text-stone-900 border border-stone-300', nameHover: 'group-hover:text-white' };
-    if (level >= 16) return { border: 'border-yellow-400', bg: 'bg-yellow-500 text-red-900', nameHover: 'group-hover:text-yellow-300' };
-    if (level >= 12) return { border: 'border-red-600', bg: 'bg-red-700 text-white', nameHover: 'group-hover:text-red-300' };
-    if (level >= 8) return { border: 'border-green-600', bg: 'bg-green-700 text-white', nameHover: 'group-hover:text-green-300' };
-    if (level >= 4) return { border: 'border-blue-600', bg: 'bg-blue-700 text-white', nameHover: 'group-hover:text-blue-300' };
+    if (level >= 19) return { border: 'border-white', bg: 'bg-white text-stone-900 border border-stone-300', nameHover: 'group-hover:text-white' };
+    if (level >= 15) return { border: 'border-yellow-400', bg: 'bg-yellow-500 text-red-900', nameHover: 'group-hover:text-yellow-300' };
+    if (level >= 11) return { border: 'border-red-600', bg: 'bg-red-700 text-white', nameHover: 'group-hover:text-red-300' };
+    if (level >= 7) return { border: 'border-green-600', bg: 'bg-green-700 text-white', nameHover: 'group-hover:text-green-300' };
+    if (level >= 3) return { border: 'border-blue-600', bg: 'bg-blue-700 text-white', nameHover: 'group-hover:text-blue-300' };
     return { border: 'border-stone-600', bg: 'bg-stone-800 text-stone-300 border border-stone-600', nameHover: 'group-hover:text-stone-300' };
   };
 
@@ -208,7 +208,6 @@ export default function GiaPhaTimeline() {
 
   return (
     // THAY ĐỔI QUAN TRỌNG:
-    // - Dùng h-full w-full relative (thay vì fixed) -> Để nó nằm gọn trong khung "Content" của Home.
     // - flex flex-col md:flex-row -> Để chia sidebar niên đại và nội dung.
     <div className="flex flex-col md:flex-row h-full w-full bg-[#da251d] overflow-hidden rounded-xl shadow-inner border-4 border-yellow-500/50 relative">
         
